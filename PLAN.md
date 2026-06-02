@@ -84,13 +84,24 @@ Each round is one **Night** followed by one **Day**.
 
 Then a new round begins, unless someone has already won.
 
-### 🤫 Suspense mode (optional)
-A lobby toggle for groups playing **in the same room or on a video call**. When it's on,
-the day vote isn't tallied instantly — instead the ballots are uncovered **one player at
-a time**. Each person, in turn, "takes the phone" (or shares their screen) and reveals
-who they voted for while everyone else waits, before it passes to the next player. Only
-after the last reveal is the result tallied. It turns the vote into a tense, dramatic
-ritual. With the toggle off, votes resolve instantly for a faster game.
+### Lobby options (two independent toggles)
+
+**📱 One phone only (pass & play).** Whether the group **shares a single device** or
+**each player uses their own phone**.
+- *On:* everyone shares one phone and passes it around; secret moments (your role, your
+  vote) are shown on this device when it's handed to you.
+- *Off:* each player joins on their own phone, so secret moments happen privately on each
+  person's own screen — nothing needs to be passed around.
+
+**🤫 Suspense mode.** Whether the day vote is revealed **one ballot at a time** or **all
+at once**.
+- *On:* ballots are uncovered one player at a time while everyone else waits, then the
+  result is tallied — a tense, dramatic ritual. Great in the same room or on a call.
+- *Off:* votes resolve instantly for a faster game.
+
+These combine naturally: with suspense on, "one phone only" means literally handing the
+phone to each player in turn to reveal; on separate devices, each player reveals on their
+own screen and the results arrive one by one.
 
 ---
 
@@ -113,14 +124,15 @@ before building the real thing. The scripted journey:
 
 1. **Title** — tap **Create Game**.
 2. **Lobby** — a room code, a scannable QR, and a shareable link appear; friends "join"
-   and fill the roster. A **Suspense mode** toggle is shown (on by default in the demo);
-   tap **Start Game**.
+   and fill the roster. Two toggles are shown (both on by default in the demo): **One
+   phone only** and **Suspense mode**; tap **Start Game**.
 3. **Your secret role** — tap the face-down card to reveal **"You are the Guardian."**
 4. **Night 1 — protect** — choose someone to protect for the night.
 5. **Dawn 1** — "The strike failed — the Guardian made a save! Everyone survived."
-6. **Day 1 — vote** — tap a suspect to cast your vote. With Suspense mode on, the
-   ballots are then revealed **one at a time** (pass the phone around) before the tally —
-   the suspect is eliminated and revealed to be an **Assassin**.
+6. **Day 1 — vote** — tap a suspect to cast your vote. With Suspense mode on, the ballots
+   are then revealed **one at a time** before the tally — handed around (one phone) or
+   arriving from each player's own device — and the suspect is eliminated and revealed to
+   be an **Assassin**.
 7. **Night 2 — protect** — choose someone to protect again.
 8. **Dawn 2** — one of the Virtuous is found eliminated (the Guardian guessed wrong this
    time).

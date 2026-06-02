@@ -36,7 +36,10 @@ let players = [
 ];
 const find = (n) => players.find((p) => p.name === n);
 
-// Game option: reveal votes one at a time (pass the phone around) for extra suspense.
+// Game options:
+//  singleDevice — everyone shares one phone and passes it around (vs. own devices).
+//  suspense     — reveal votes one at a time (vs. all at once).
+let singleDevice = true;
 let suspense = true;
 
 // Scripted day-vote ballots per round (only the players alive that day).
@@ -134,11 +137,18 @@ scenes.lobby = () => {
       <div class="roster" id="roster">${drawRoster(count)}</div>
       ${ready ? `
       <label class="option">
+        <input type="checkbox" id="single-device" ${singleDevice ? 'checked' : ''} />
+        <span class="option-box"></span>
+        <span class="option-text"><strong>One phone only</strong>
+          <span class="option-sub">Everyone shares this device and passes it around.
+            Turn off if each player has their own phone.</span></span>
+      </label>
+      <label class="option">
         <input type="checkbox" id="suspense" ${suspense ? 'checked' : ''} />
         <span class="option-box"></span>
         <span class="option-text"><strong>Suspense mode</strong>
-          <span class="option-sub">Reveal votes one at a time — pass the phone around.
-            Best in the same room or on a video call.</span></span>
+          <span class="option-sub">Reveal votes one at a time instead of all at once.
+            Great in the same room or on a video call.</span></span>
       </label>` : ''}
       <div class="spacer"></div>
       <button class="btn" id="start" ${ready ? '' : 'disabled'}>Start Game</button>
@@ -146,6 +156,7 @@ scenes.lobby = () => {
       ? { hint: "Everyone joined — tap “Start Game”", targetSelector: '#start' }
       : { hint: "Share the link… friends are joining" });
     if (ready) {
+      app.querySelector('#single-device').onchange = (e) => { singleDevice = e.target.checked; };
       app.querySelector('#suspense').onchange = (e) => { suspense = e.target.checked; };
       app.querySelector('#start').onclick = () => scenes.roleGuard();
     }
@@ -266,11 +277,25 @@ scenes.voteReveal = (round, i) => {
   const [voter, choice] = votes[i];
   const isYou = voter === 'You';
   const last = i + 1 >= votes.length;
+  const nextLabel = last ? 'Tally the votes' : 'Next voter';
+  // On own devices, other players reveal privately on their own phone — their result
+  // simply arrives here. Only your own ballot is yours to flip. With one shared phone,
+  // every ballot is flipped here as it's passed around.
+  const arrives = !singleDevice && !isYou;
+
+  const heading = isYou ? 'Your vote'
+    : singleDevice ? `Pass the phone to ${voter}`
+    : `${voter} has voted`;
+  const hint = arrives
+    ? `${voter} revealed on their own phone — tap “${nextLabel}”`
+    : isYou ? 'Tap the card to show your vote'
+    : `Hand the phone to ${voter}, then tap to reveal`;
+
   render(`
     <p class="eyebrow center" style="margin-top:6px">Ballot ${i + 1} of ${votes.length}</p>
-    <h2 class="center">${isYou ? 'Your vote' : `Pass the phone to ${voter}`}</h2>
+    <h2 class="center">${heading}</h2>
     <div class="reveal">
-      <div class="flip vote" id="flip">
+      <div class="flip vote ${arrives ? 'flipped' : ''}" id="flip">
         <div class="face back">
           <div class="glyph">🤫</div>
           <div class="role-name">${isYou ? 'Your vote' : 'Tap to reveal'}</div>
@@ -282,22 +307,22 @@ scenes.voteReveal = (round, i) => {
         </div>
       </div>
     </div>
-    <button class="btn" id="next" hidden>${last ? 'Tally the votes' : 'Next voter'}</button>
-  `, {
-    hint: isYou ? 'Tap the card to show your vote'
-                : `Hand the phone to ${voter}, then tap to reveal`,
-    targetSelector: '#flip',
-  });
+    <button class="btn" id="next" ${arrives ? '' : 'hidden'}>${nextLabel}</button>
+  `, { hint, targetSelector: arrives ? '#next' : '#flip' });
 
   const flip = app.querySelector('#flip');
   const next = app.querySelector('#next');
-  flip.onclick = () => {
-    if (flip.classList.contains('flipped')) return;
-    flip.classList.add('flipped');
-    next.hidden = false;
+  if (arrives) {
     next.classList.add('target');
-    setHint(last ? 'Tap “Tally the votes”' : 'Tap “Next voter”');
-  };
+  } else {
+    flip.onclick = () => {
+      if (flip.classList.contains('flipped')) return;
+      flip.classList.add('flipped');
+      next.hidden = false;
+      next.classList.add('target');
+      setHint(`Tap “${nextLabel}”`);
+    };
+  }
   next.onclick = () => scenes.voteReveal(round, i + 1);
 };
 
