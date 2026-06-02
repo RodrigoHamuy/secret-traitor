@@ -8,9 +8,9 @@
   --text: #efeaf9;
   --muted: #a99fc4;
   --gold: #e8c468;     /* primary accent */
-  --green: #57c98a;    /* villager / doctor good */
-  --blue: #5aa9f0;     /* doctor */
-  --red: #e0564c;      /* murderer / danger */
+  --green: #57c98a;    /* senator / good */
+  --blue: #5aa9f0;     /* guardian */
+  --red: #e0564c;      /* assassin / danger */
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -156,9 +156,9 @@ p  { color: var(--muted); line-height: 1.5; margin: 0 0 14px; }
 .face.front { background: linear-gradient(160deg, var(--card-2), var(--card)); transform: rotateY(180deg); }
 .face .glyph { font-size: 62px; margin-bottom: 14px; }
 .role-name { font-size: 30px; font-weight: 800; letter-spacing: .03em; }
-.role-doctor { color: var(--blue); }
-.role-villager { color: var(--green); }
-.role-murderer { color: var(--red); }
+.role-guardian { color: var(--blue); }
+.role-senator { color: var(--green); }
+.role-assassin { color: var(--red); }
 
 /* Status pills */
 .pill { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 12px;

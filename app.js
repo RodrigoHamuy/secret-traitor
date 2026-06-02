@@ -7,16 +7,16 @@ const app = document.getElementById('app');
 const hintEl = document.getElementById('hint');
 const hintText = document.getElementById('hint-text');
 
-// ----- Cast (you + 6 friends). Murderers are Eli & Finn. -----
+// ----- Cast (you + 6 friends). Assassins are Eli & Finn. -----
 const COLORS = ['#e8c468', '#57c98a', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a', '#5af0d2'];
 let players = [
-  { name: 'You',  role: 'doctor',   alive: true, you: true },
-  { name: 'Ava',  role: 'villager', alive: true },
-  { name: 'Ben',  role: 'villager', alive: true },
-  { name: 'Cleo', role: 'villager', alive: true },
-  { name: 'Dot',  role: 'villager', alive: true },
-  { name: 'Eli',  role: 'murderer', alive: true },
-  { name: 'Finn', role: 'murderer', alive: true },
+  { name: 'You',  role: 'guardian', alive: true, you: true },
+  { name: 'Ava',  role: 'senator',  alive: true },
+  { name: 'Ben',  role: 'senator',  alive: true },
+  { name: 'Cleo', role: 'senator',  alive: true },
+  { name: 'Dot',  role: 'senator',  alive: true },
+  { name: 'Eli',  role: 'assassin', alive: true },
+  { name: 'Finn', role: 'assassin', alive: true },
 ];
 const find = (n) => players.find((p) => p.name === n);
 
@@ -74,7 +74,7 @@ scenes.title = () => {
     <div class="spacer"></div>
     <p class="eyebrow center">A game of trust &amp; betrayal</p>
     <h1 class="center">SECRET<br>TRAITOR</h1>
-    <p class="center">By night someone strikes. By day the village decides who to trust.</p>
+    <p class="center">By night a traitor strikes. By day the Senate decides who to trust.</p>
     <div class="spacer"></div>
     <button class="btn" id="create">Create Game</button>
     <button class="btn secondary" disabled>Join Game</button>
@@ -129,10 +129,10 @@ scenes.roleGuard = () => {
           <div class="role-name">Tap to reveal</div>
         </div>
         <div class="face front">
-          <div class="glyph">🩺</div>
-          <div class="role-name role-doctor">DOCTOR</div>
-          <p style="margin-top:12px">Each night, secretly choose one person to protect.
-            If the killer strikes them, they survive.</p>
+          <div class="glyph">🛡️</div>
+          <div class="role-name role-guardian">GUARDIAN</div>
+          <p style="margin-top:12px">Each night, secretly choose one Senator to protect.
+            If the Assassins strike them, they survive.</p>
         </div>
       </div>
     </div>
@@ -146,7 +146,7 @@ scenes.roleGuard = () => {
     flip.classList.add('flipped');
     ready.hidden = false;
     ready.classList.add('target');
-    setHint("You’re the Doctor — tap “I’m ready”");
+    setHint("You’re the Guardian — tap “I’m ready”");
   };
   ready.onclick = () => scenes.night(1);
 };
@@ -156,7 +156,7 @@ scenes.night = (round) => {
     <div class="spacer"></div>
     <div class="scene-emoji">🌙</div>
     <h2 class="center">Night ${round}</h2>
-    <p class="center">The village sleeps. As the Doctor, choose someone to protect tonight.</p>
+    <p class="center">The Senate sleeps. As the Guardian, choose a Senator to protect tonight.</p>
     ${pickGrid(round === 1 ? 'Cleo' : 'Ava', (name) => scenes.nightWait(round, name))}
     <div class="spacer"></div>
   `, { hint: round === 1
@@ -183,8 +183,8 @@ scenes.dawn = (round) => {
       <div class="spacer"></div>
       <div class="scene-emoji">🌅</div>
       <h2 class="center">Dawn breaks</h2>
-      <p class="center">A scream pierced the night… but the attack failed.
-        <strong style="color:var(--green)">The Doctor made a save — everyone survived!</strong></p>
+      <p class="center">A blade flashed in the night… but the strike failed.
+        <strong style="color:var(--green)">The Guardian made a save — everyone survived!</strong></p>
       <div class="spacer"></div>
       <button class="btn" id="next">Begin the day</button>
     `, { hint: "Tap “Begin the day”", targetSelector: '#next' });
@@ -197,7 +197,7 @@ scenes.dawn = (round) => {
       <div class="scene-emoji">🌅</div>
       <h2 class="center">Dawn breaks</h2>
       <p class="center">${avatar('Dot')} <strong>Dot</strong> was found eliminated.</p>
-      <p class="center">Dot was a <strong style="color:var(--green)">Villager</strong>.</p>
+      <p class="center">Dot was a <strong style="color:var(--green)">Senator</strong>.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">Begin the day</button>
     `, { hint: "Tap “Begin the day”", targetSelector: '#next' });
@@ -219,32 +219,32 @@ scenes.day = (round) => {
 scenes.dayReveal = (round, name) => {
   const p = find(name);
   p.alive = false;
-  const isKiller = p.role === 'murderer';
-  const murderersLeft = players.filter((x) => x.role === 'murderer' && x.alive).length;
+  const isKiller = p.role === 'assassin';
+  const assassinsLeft = players.filter((x) => x.role === 'assassin' && x.alive).length;
   render(`
     <div class="spacer"></div>
     <div class="scene-emoji">🗳️</div>
-    <h2 class="center">The village has voted</h2>
+    <h2 class="center">The Senate has voted</h2>
     <p class="center">${avatar(name)} <strong>${name}</strong> is eliminated.</p>
-    <p class="center">${name} was a
-      <strong class="${isKiller ? 'role-murderer' : 'role-villager'}">
-        ${isKiller ? 'MURDERER' : 'Villager'}</strong>!</p>
+    <p class="center">${name} was ${isKiller ? 'an' : 'a'}
+      <strong class="${isKiller ? 'role-assassin' : 'role-senator'}">
+        ${isKiller ? 'ASSASSIN' : 'Senator'}</strong>!</p>
     <div class="spacer"></div>
     <button class="btn" id="next">Continue</button>
   `, { hint: "Tap “Continue”", targetSelector: '#next' });
   app.querySelector('#next').onclick = () =>
-    murderersLeft === 0 ? scenes.win() : scenes.roundSummary(round);
+    assassinsLeft === 0 ? scenes.win() : scenes.roundSummary(round);
 };
 
 scenes.roundSummary = (round) => {
   const alive = players.filter((p) => p.alive).length;
-  const killers = players.filter((p) => p.role === 'murderer' && p.alive).length;
+  const killers = players.filter((p) => p.role === 'assassin' && p.alive).length;
   render(`
     <div class="spacer"></div>
     <div class="scene-emoji">🔎</div>
     <h2 class="center">The hunt continues</h2>
     <p class="center"><span class="pill">${alive} still alive</span></p>
-    <p class="center"><strong style="color:var(--red)">${killers} murderer</strong>
+    <p class="center"><strong style="color:var(--red)">${killers} Assassin</strong>
       still hides among you.</p>
     <div class="spacer"></div>
     <button class="btn" id="next">To nightfall</button>
@@ -257,8 +257,8 @@ scenes.win = () => {
     <div class="spacer"></div>
     <div class="scene-emoji">🎉</div>
     <p class="eyebrow center">Victory</p>
-    <h1 class="center" style="color:var(--green);font-size:34px">THE VILLAGE WINS</h1>
-    <p class="center">Every murderer has been caught. The village is safe… until next time.</p>
+    <h1 class="center" style="color:var(--green);font-size:34px">THE SENATE WINS</h1>
+    <p class="center">Every Assassin has been caught. The Senate is safe… until next time.</p>
     <div class="spacer"></div>
     <button class="btn" id="again">Play Again</button>
   `, { hint: "Tap “Play Again” to restart the demo", targetSelector: '#again' });
