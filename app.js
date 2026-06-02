@@ -23,6 +23,9 @@ function qrImage(text) {
   return qr.createImgTag(5, 12, 'Scan to join');
 }
 
+// Demo mode runs the scripted teaching walkthrough; off runs the real game.
+let demoMode = false;
+
 // ----- Cast (you + 6 friends). Assassins are Eli & Finn. -----
 const COLORS = ['#e8c468', '#57c98a', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a', '#5af0d2'];
 let players = [
@@ -107,10 +110,17 @@ scenes.title = () => {
     <div class="divider">❦</div>
     <p class="center">By night a traitor strikes. By day the Virtuous decide who to trust.</p>
     <div class="spacer"></div>
-    <button class="btn" id="create">Create Game</button>
-    <button class="btn secondary" disabled>Join Game</button>
-  `, { hint: "Tap “Create Game” to begin", targetSelector: '#create' });
-  app.querySelector('#create').onclick = () => scenes.lobby();
+    <label class="option" style="margin-bottom:4px">
+      <input type="checkbox" id="demo" ${demoMode ? 'checked' : ''} />
+      <span class="option-box"></span>
+      <span class="option-text"><strong>Demo mode</strong>
+        <span class="option-sub">A guided, scripted walkthrough to teach the game.</span></span>
+    </label>
+    <button class="btn" id="create">${demoMode ? 'Start walkthrough' : 'Create Game'}</button>
+    <button class="btn secondary" id="join" disabled>Join Game · online soon</button>
+  `, { hint: demoMode ? "Tap “Start walkthrough”" : "Tap “Create Game” to begin", targetSelector: '#create' });
+  app.querySelector('#demo').onchange = (e) => { demoMode = e.target.checked; scenes.title(); };
+  app.querySelector('#create').onclick = () => (demoMode ? scenes.lobby() : Game.start());
 };
 
 scenes.lobby = () => {

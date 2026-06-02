@@ -15,6 +15,9 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
   <link rel="stylesheet" href="app.css" />
+
+  <!-- Pure game logic, loaded before the UI that uses it -->
+  <script src="engine.js"></script>
 </head>
 <body>
   <!-- Phone frame keeps the demo feeling like a mobile app on desktop too -->
@@ -29,6 +32,8 @@
 
   <p class="demo-note">Demo walkthrough · all content is scripted · no real game logic</p>
 
+  <!-- app.js: shared UI helpers + scripted demo · game.js: the real single-device game -->
   <script src="app.js"></script>
+  <script src="game.js"></script>
 </body>
 </html>

@@ -159,8 +159,13 @@ The demo lives as plain static files (just open it in a browser; trivial to host
 
 ## 7. Milestones
 
-1. **M1 — Demo:** static, clickable happy-path that highlights each tap. ← first
-2. **Review & iterate** on the rules and the feel.
-3. **M2 — Real lobby:** create/join a game by link and code.
-4. **M3 — Core loop:** secret roles, night actions, day vote, win detection.
-5. **M4 — Polish:** art, sound, animation, accessibility.
+1. ✅ **M1 — Demo:** static, clickable happy-path that highlights each tap. *(Kept as a
+   "Demo mode" toggle on the title screen for teaching the game.)*
+2. ✅ **M2 — Single-device game (one shared phone):** real, fully playable pass-&-play
+   game — setup & role dealing, secret role reveal, narrated night (Assassins + Guardian),
+   dawn resolution, secret day vote with optional suspense reveal, and win detection.
+   No backend required (pure static). Logic lives in `engine.js`; UI in `game.js`.
+3. **M3 — Online lobby (link/QR join):** cross-device play over a **zero-setup P2P**
+   transport (Trystero via CDN) so the "create a session, share a link" flow works on
+   static hosting. Reuses the same `engine.js`.
+4. **M4 — Polish:** art, sound, animation, reconnection, accessibility.
