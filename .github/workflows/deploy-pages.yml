@@ -1,0 +1,52 @@
+name: Deploy to GitHub Pages
+
+# Deploys the static demo (index.html, app.css, app.js) to GitHub Pages.
+# No build tools — we just stage the static files and publish them.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/secret-traitor-plan-bonbe
+  workflow_dispatch:
+
+# Permissions required by the Pages deploy actions.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; newer pushes supersede in-progress ones.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Stage static site
+        run: |
+          mkdir -p _site
+          # Copy only the files the site needs (skip .git, .github, *.md, etc.)
+          cp index.html app.css app.js _site/
+          # Disable Jekyll so files/folders are served verbatim.
+          touch _site/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
