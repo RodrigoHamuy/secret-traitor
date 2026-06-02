@@ -11,10 +11,10 @@ const hintText = document.getElementById('hint-text');
 const COLORS = ['#e8c468', '#57c98a', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a', '#5af0d2'];
 let players = [
   { name: 'You',  role: 'guardian', alive: true, you: true },
-  { name: 'Ava',  role: 'senator',  alive: true },
-  { name: 'Ben',  role: 'senator',  alive: true },
-  { name: 'Cleo', role: 'senator',  alive: true },
-  { name: 'Dot',  role: 'senator',  alive: true },
+  { name: 'Ava',  role: 'virtuous', alive: true },
+  { name: 'Ben',  role: 'virtuous', alive: true },
+  { name: 'Cleo', role: 'virtuous', alive: true },
+  { name: 'Dot',  role: 'virtuous', alive: true },
   { name: 'Eli',  role: 'assassin', alive: true },
   { name: 'Finn', role: 'assassin', alive: true },
 ];
@@ -74,7 +74,7 @@ scenes.title = () => {
     <div class="spacer"></div>
     <p class="eyebrow center">A game of trust &amp; betrayal</p>
     <h1 class="center">SECRET<br>TRAITOR</h1>
-    <p class="center">By night a traitor strikes. By day the Senate decides who to trust.</p>
+    <p class="center">By night a traitor strikes. By day the Virtuous decide who to trust.</p>
     <div class="spacer"></div>
     <button class="btn" id="create">Create Game</button>
     <button class="btn secondary" disabled>Join Game</button>
@@ -131,7 +131,7 @@ scenes.roleGuard = () => {
         <div class="face front">
           <div class="glyph">🛡️</div>
           <div class="role-name role-guardian">GUARDIAN</div>
-          <p style="margin-top:12px">Each night, secretly choose one Senator to protect.
+          <p style="margin-top:12px">Each night, secretly choose someone to protect.
             If the Assassins strike them, they survive.</p>
         </div>
       </div>
@@ -156,7 +156,7 @@ scenes.night = (round) => {
     <div class="spacer"></div>
     <div class="scene-emoji">🌙</div>
     <h2 class="center">Night ${round}</h2>
-    <p class="center">The Senate sleeps. As the Guardian, choose a Senator to protect tonight.</p>
+    <p class="center">Everyone sleeps. As the Guardian, choose someone to protect tonight.</p>
     ${pickGrid(round === 1 ? 'Cleo' : 'Ava', (name) => scenes.nightWait(round, name))}
     <div class="spacer"></div>
   `, { hint: round === 1
@@ -197,7 +197,7 @@ scenes.dawn = (round) => {
       <div class="scene-emoji">🌅</div>
       <h2 class="center">Dawn breaks</h2>
       <p class="center">${avatar('Dot')} <strong>Dot</strong> was found eliminated.</p>
-      <p class="center">Dot was a <strong style="color:var(--green)">Senator</strong>.</p>
+      <p class="center">Dot was <strong style="color:var(--green)">Virtuous</strong>.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">Begin the day</button>
     `, { hint: "Tap “Begin the day”", targetSelector: '#next' });
@@ -224,11 +224,11 @@ scenes.dayReveal = (round, name) => {
   render(`
     <div class="spacer"></div>
     <div class="scene-emoji">🗳️</div>
-    <h2 class="center">The Senate has voted</h2>
+    <h2 class="center">The vote is in</h2>
     <p class="center">${avatar(name)} <strong>${name}</strong> is eliminated.</p>
-    <p class="center">${name} was ${isKiller ? 'an' : 'a'}
-      <strong class="${isKiller ? 'role-assassin' : 'role-senator'}">
-        ${isKiller ? 'ASSASSIN' : 'Senator'}</strong>!</p>
+    <p class="center">${name} was ${isKiller
+      ? 'an <strong class="role-assassin">ASSASSIN</strong>'
+      : '<strong class="role-virtuous">Virtuous</strong>'}!</p>
     <div class="spacer"></div>
     <button class="btn" id="next">Continue</button>
   `, { hint: "Tap “Continue”", targetSelector: '#next' });
@@ -257,8 +257,8 @@ scenes.win = () => {
     <div class="spacer"></div>
     <div class="scene-emoji">🎉</div>
     <p class="eyebrow center">Victory</p>
-    <h1 class="center" style="color:var(--green);font-size:34px">THE SENATE WINS</h1>
-    <p class="center">Every Assassin has been caught. The Senate is safe… until next time.</p>
+    <h1 class="center" style="color:var(--green);font-size:34px">THE VIRTUOUS WIN</h1>
+    <p class="center">Every Assassin has been caught. The Virtuous are safe… until next time.</p>
     <div class="spacer"></div>
     <button class="btn" id="again">Play Again</button>
   `, { hint: "Tap “Play Again” to restart the demo", targetSelector: '#again' });

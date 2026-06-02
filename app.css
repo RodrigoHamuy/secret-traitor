@@ -8,7 +8,7 @@
   --text: #efeaf9;
   --muted: #a99fc4;
   --gold: #e8c468;     /* primary accent */
-  --green: #57c98a;    /* senator / good */
+  --green: #57c98a;    /* virtuous / good */
   --blue: #5aa9f0;     /* guardian */
   --red: #e0564c;      /* assassin / danger */
 }
@@ -157,7 +157,7 @@ p  { color: var(--muted); line-height: 1.5; margin: 0 0 14px; }
 .face .glyph { font-size: 62px; margin-bottom: 14px; }
 .role-name { font-size: 30px; font-weight: 800; letter-spacing: .03em; }
 .role-guardian { color: var(--blue); }
-.role-senator { color: var(--green); }
+.role-virtuous { color: var(--green); }
 .role-assassin { color: var(--red); }
 
 /* Status pills */

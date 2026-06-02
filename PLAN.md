@@ -1,13 +1,13 @@
 # Secret Traitor — Game Plan
 
 > Comparisons to existing TV or tabletop games have been kept out of this document so
-> the project stands on its own. The setting is a corrupt, pompous Senate where loyal
-> Senators must root out the Assassins hiding among them.
+> the project stands on its own. The loyal majority are the **Virtuous**; hidden among
+> them are the **Assassins**, and a lone **Guardian** tries to keep the innocent alive.
 
 A free, web-based, mobile-friendly party game of social deduction. By night a hidden
-**Assassin** strikes; by day the **Senate** gathers to accuse and vote. Played with a
-group in the same room (or on a call), each person uses their phone as a private
-"console" that only they can see.
+**Assassin** strikes; by day everyone gathers to accuse and vote. Played with a group
+in the same room (or on a call), each person uses their phone as a private "console"
+that only they can see.
 
 This document focuses on **the rules and the player experience**. Technical details
 (hosting, networking, code structure) are intentionally left out for now — we'll spec
@@ -17,10 +17,10 @@ those once the rules and the demo feel right.
 
 ## 1. The game in one breath
 
-Everyone is secretly assigned a role. Each **night**, the Assassins quietly choose a
-Senator to eliminate and the Guardian quietly chooses someone to protect. Each **day**,
-the surviving Senate debates and votes to eliminate one suspect. The Senators win when
-every Assassin is caught; the Assassins win when they equal or outnumber everyone else.
+Everyone is secretly assigned a role. Each **night**, the Assassins quietly choose
+someone to eliminate and the Guardian quietly chooses someone to protect. Each **day**,
+the survivors debate and vote to eliminate one suspect. The Virtuous win when every
+Assassin is caught; the Assassins win when they equal or outnumber everyone else.
 
 - **Players:** 5–12 (sweet spot 6–10).
 - **Length:** a few minutes to ~15 minutes per game.
@@ -30,37 +30,34 @@ every Assassin is caught; the Assassins win when they equal or outnumber everyon
 
 ## 2. Roles
 
-### 🏛️ Senator
-A loyal (if rather self-important) member of the Senate, with no special power.
+### ⚖️ Virtuous
+An ordinary, innocent member of the group, with no special power.
 - **Goal:** work out who the Assassins are and vote them out during the day.
 - **At night:** sleeps (no action).
-- Senators are the majority and win by deduction, debate, and voting.
+- The Virtuous are the majority and win by deduction, debate, and voting.
 
 ### 🗡️ Assassin
-A Senator who has secretly turned traitor. (There may be more than one; they know each
+A secret traitor hiding among the Virtuous. (There may be more than one; they know each
 other.)
-- **Goal:** eliminate Senators until the Assassins equal or outnumber everyone else.
+- **Goal:** eliminate the Virtuous until the Assassins equal or outnumber everyone else.
 - **At night:** the Assassins privately agree on **one person to eliminate**.
-- By day they play the loyal Senator, deflecting suspicion.
+- By day they pose as one of the Virtuous, deflecting suspicion.
 
 ### 🛡️ Guardian
-A Senator sworn to protect the chamber.
-- **Goal:** same as the Senators — catch the Assassins.
+One of the Virtuous, sworn to protect the innocent.
+- **Goal:** same as the Virtuous — catch the Assassins.
 - **At night:** privately chooses **one person to protect**. If the Assassins target
   that person this night, the strike fails and **no one dies**.
 - The Guardian may be allowed to protect themselves (a setting we can tune later).
 
 **Suggested role counts** (starting point, to balance during playtesting):
 
-| Players | Assassins | Guardian | Senators |
+| Players | Assassins | Guardian | Virtuous |
 |:------:|:--------:|:------:|:--------:|
 | 5      | 1        | 1      | 3        |
 | 6–7    | 1        | 1      | 4–5      |
 | 8–9    | 2        | 1      | 5–6      |
 | 10–12  | 2        | 1      | 7–9      |
-
-> *Naming note: the protector is "Guardian" for now — a more Roman flavor (e.g.
-> "Praetorian") is an easy swap if we want it.*
 
 ---
 
@@ -72,7 +69,7 @@ Each round is one **Night** followed by one **Day**.
 1. Everyone "goes to sleep" — phones show a neutral waiting screen.
 2. **Assassins** secretly pick one person to eliminate.
 3. **Guardian** secretly picks one person to protect.
-4. **Senators** simply wait for night to end.
+4. **The Virtuous** simply wait for night to end.
 
 ### ☀️ Dawn
 - If the Assassins' target was the same person the Guardian protected → **the strike
@@ -80,7 +77,7 @@ Each round is one **Night** followed by one **Day**.
 - Otherwise → that person is **eliminated** and their role is revealed to everyone.
 
 ### 🗣️ Day
-1. The surviving Senate debates who they suspect.
+1. The survivors debate who they suspect.
 2. Everyone **votes** to eliminate one person.
 3. The person with the most votes is **eliminated** and their role is revealed.
    *(Tie-handling is an open question — see §6.)*
@@ -91,10 +88,10 @@ Then a new round begins, unless someone has already won.
 
 ## 4. Winning
 
-- 🏛️ **Senators (and the Guardian) win** the moment **every Assassin has been
+- ⚖️ **The Virtuous (and the Guardian) win** the moment **every Assassin has been
   eliminated.**
-- 🗡️ **Assassins win** the moment the number of Assassins is **equal to or greater
-  than** the number of remaining non-Assassins (at that point they can no longer be
+- 🗡️ **The Assassins win** the moment the number of Assassins is **equal to or greater
+  than** the number of remaining Virtuous (at that point they can no longer be
   out-voted).
 
 ---
@@ -110,14 +107,15 @@ before building the real thing. The scripted journey:
 2. **Lobby** — a room code and a shareable link appear; friends "join" and fill the
    roster; tap **Start Game**.
 3. **Your secret role** — tap the face-down card to reveal **"You are the Guardian."**
-4. **Night 1 — protect** — choose a Senator to protect for the night.
+4. **Night 1 — protect** — choose someone to protect for the night.
 5. **Dawn 1** — "The strike failed — the Guardian made a save! Everyone survived."
-6. **Day 1 — vote** — tap a suspect to cast your vote; the Senate eliminates them and
-   reveals they were an **Assassin**.
+6. **Day 1 — vote** — tap a suspect to cast your vote; they're eliminated and revealed
+   to be an **Assassin**.
 7. **Night 2 — protect** — choose someone to protect again.
-8. **Dawn 2** — a Senator is found eliminated (the Guardian guessed wrong this time).
-9. **Day 2 — vote** — the Senate votes out the **last Assassin**.
-10. **Victory** — "The Senate wins! Every Assassin has been caught." Tap **Play
+8. **Dawn 2** — one of the Virtuous is found eliminated (the Guardian guessed wrong this
+   time).
+9. **Day 2 — vote** — the group votes out the **last Assassin**.
+10. **Victory** — "The Virtuous win! Every Assassin has been caught." Tap **Play
     Again**.
 
 The demo lives as plain static files (just open it in a browser; trivial to host).
