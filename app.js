@@ -36,6 +36,17 @@ let players = [
 ];
 const find = (n) => players.find((p) => p.name === n);
 
+// Game option: reveal votes one at a time (pass the phone around) for extra suspense.
+let suspense = true;
+
+// Scripted day-vote ballots per round (only the players alive that day).
+// In both rounds the highlighted suspect ends up with the majority.
+const VOTES = {
+  1: [['You', 'Eli'], ['Ava', 'Eli'], ['Ben', 'Eli'], ['Cleo', 'Finn'],
+      ['Dot', 'Eli'], ['Eli', 'Dot'], ['Finn', 'Cleo']],
+  2: [['You', 'Finn'], ['Ava', 'Finn'], ['Ben', 'Finn'], ['Cleo', 'Finn'], ['Finn', 'Ava']],
+};
+
 // ----- helpers -----
 function initials(name) { return name === 'You' ? 'YOU' : name.slice(0, 2).toUpperCase(); }
 function color(i) { return COLORS[i % COLORS.length]; }
@@ -121,12 +132,23 @@ scenes.lobby = () => {
       <p style="margin-bottom:8px">${ready ? 'Everyone’s in!' : 'Waiting for players to join…'}
         <span class="pill">${count + 1} / 7</span></p>
       <div class="roster" id="roster">${drawRoster(count)}</div>
+      ${ready ? `
+      <label class="option">
+        <input type="checkbox" id="suspense" ${suspense ? 'checked' : ''} />
+        <span class="option-box"></span>
+        <span class="option-text"><strong>Suspense mode</strong>
+          <span class="option-sub">Reveal votes one at a time — pass the phone around.
+            Best in the same room or on a video call.</span></span>
+      </label>` : ''}
       <div class="spacer"></div>
       <button class="btn" id="start" ${ready ? '' : 'disabled'}>Start Game</button>
     `, ready
       ? { hint: "Everyone joined — tap “Start Game”", targetSelector: '#start' }
       : { hint: "Share the link… friends are joining" });
-    if (ready) app.querySelector('#start').onclick = () => scenes.roleGuard();
+    if (ready) {
+      app.querySelector('#suspense').onchange = (e) => { suspense = e.target.checked; };
+      app.querySelector('#start').onclick = () => scenes.roleGuard();
+    }
   };
   let count = 0;
   screen(count, false);
@@ -230,9 +252,53 @@ scenes.day = (round) => {
     <p class="eyebrow">Day ${round} · Round table</p>
     <h2>Who do you accuse?</h2>
     <p>Talk it over, then vote to eliminate one suspect.</p>
-    ${pickGrid(target, (name) => scenes.dayReveal(round, name))}
+    ${pickGrid(target, () => suspense ? scenes.voteReveal(round, 0) : scenes.dayReveal(round, target))}
     <div class="spacer"></div>
   `, { hint: `Suspicion falls on ${target} — tap to vote` });
+};
+
+// Suspense mode: one player at a time uncovers their vote; the rest wait.
+scenes.voteReveal = (round, i) => {
+  const votes = VOTES[round];
+  const target = round === 1 ? 'Eli' : 'Finn';
+  if (i >= votes.length) return scenes.dayReveal(round, target);
+
+  const [voter, choice] = votes[i];
+  const isYou = voter === 'You';
+  const last = i + 1 >= votes.length;
+  render(`
+    <p class="eyebrow center" style="margin-top:6px">Ballot ${i + 1} of ${votes.length}</p>
+    <h2 class="center">${isYou ? 'Your vote' : `Pass the phone to ${voter}`}</h2>
+    <div class="reveal">
+      <div class="flip vote" id="flip">
+        <div class="face back">
+          <div class="glyph">🤫</div>
+          <div class="role-name">${isYou ? 'Your vote' : 'Tap to reveal'}</div>
+        </div>
+        <div class="face front">
+          <div class="vote-line">${avatar(voter)}<span>${voter}</span></div>
+          <div class="vote-arrow">votes to banish</div>
+          <div class="vote-line"><span class="vote-choice">${choice}</span>${avatar(choice)}</div>
+        </div>
+      </div>
+    </div>
+    <button class="btn" id="next" hidden>${last ? 'Tally the votes' : 'Next voter'}</button>
+  `, {
+    hint: isYou ? 'Tap the card to show your vote'
+                : `Hand the phone to ${voter}, then tap to reveal`,
+    targetSelector: '#flip',
+  });
+
+  const flip = app.querySelector('#flip');
+  const next = app.querySelector('#next');
+  flip.onclick = () => {
+    if (flip.classList.contains('flipped')) return;
+    flip.classList.add('flipped');
+    next.hidden = false;
+    next.classList.add('target');
+    setHint(last ? 'Tap “Tally the votes”' : 'Tap “Next voter”');
+  };
+  next.onclick = () => scenes.voteReveal(round, i + 1);
 };
 
 scenes.dayReveal = (round, name) => {

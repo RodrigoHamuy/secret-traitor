@@ -199,11 +199,41 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .pick.dead { opacity: .4; pointer-events: none; filter: grayscale(.5); }
 .pick.dead .name::after { content: " †"; }
 
+/* Lobby option — themed checkbox */
+.option {
+  display: flex; align-items: flex-start; gap: 12px; text-align: left; cursor: pointer;
+  padding: 14px; border-radius: 10px; margin-top: 14px;
+  background: #211810; border: 1px solid var(--line);
+}
+.option input { position: absolute; opacity: 0; width: 0; height: 0; }
+.option-box {
+  flex: none; width: 24px; height: 24px; border-radius: 6px; margin-top: 2px;
+  border: 1px solid #7a5d28;
+  background: linear-gradient(180deg, var(--parch), var(--parch-2));
+  display: grid; place-items: center;
+  font-family: 'Cinzel', serif; color: #7a3b16; font-weight: 700; font-size: 16px;
+}
+.option input:checked + .option-box::after { content: '✓'; }
+.option input:focus-visible + .option-box { box-shadow: 0 0 0 3px rgba(232,200,115,.5); }
+.option-text strong {
+  display: block; font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .04em;
+  color: var(--gold-bright); font-size: 14px; text-transform: uppercase; margin-bottom: 2px;
+}
+.option-sub { color: var(--muted); font-size: 14px; line-height: 1.4; }
+
+/* Vote reveal (suspense mode) */
+.vote-line { display: flex; align-items: center; justify-content: center; gap: 10px;
+             font-family: 'Cinzel', serif; font-weight: 700; font-size: 20px; color: var(--ink); }
+.vote-arrow { margin: 14px 0; font-family: 'Cinzel', serif; letter-spacing: .2em;
+              font-size: 11px; text-transform: uppercase; color: #8a6a2f; }
+.vote-choice { color: #9e3b2f; }
+
 /* Role reveal card (flip) */
 .reveal { perspective: 1200px; margin: auto 0; }
 .flip { position: relative; width: 100%; aspect-ratio: 3/4; transform-style: preserve-3d;
         transition: transform .7s cubic-bezier(.2,.7,.2,1); }
 .flip.flipped { transform: rotateY(180deg); }
+.flip.vote { aspect-ratio: 1 / 1; }   /* shorter card for the per-voter reveal */
 .face {
   position: absolute; inset: 0; backface-visibility: hidden;
   border-radius: 14px; padding: 26px; text-align: center;

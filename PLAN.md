@@ -84,6 +84,14 @@ Each round is one **Night** followed by one **Day**.
 
 Then a new round begins, unless someone has already won.
 
+### 🤫 Suspense mode (optional)
+A lobby toggle for groups playing **in the same room or on a video call**. When it's on,
+the day vote isn't tallied instantly — instead the ballots are uncovered **one player at
+a time**. Each person, in turn, "takes the phone" (or shares their screen) and reveals
+who they voted for while everyone else waits, before it passes to the next player. Only
+after the last reveal is the result tallied. It turns the vote into a tense, dramatic
+ritual. With the toggle off, votes resolve instantly for a faster game.
+
 ---
 
 ## 4. Winning
@@ -104,13 +112,15 @@ behind the scenes; it exists so we can feel the flow and the card-style mobile U
 before building the real thing. The scripted journey:
 
 1. **Title** — tap **Create Game**.
-2. **Lobby** — a room code and a shareable link appear; friends "join" and fill the
-   roster; tap **Start Game**.
+2. **Lobby** — a room code, a scannable QR, and a shareable link appear; friends "join"
+   and fill the roster. A **Suspense mode** toggle is shown (on by default in the demo);
+   tap **Start Game**.
 3. **Your secret role** — tap the face-down card to reveal **"You are the Guardian."**
 4. **Night 1 — protect** — choose someone to protect for the night.
 5. **Dawn 1** — "The strike failed — the Guardian made a save! Everyone survived."
-6. **Day 1 — vote** — tap a suspect to cast your vote; they're eliminated and revealed
-   to be an **Assassin**.
+6. **Day 1 — vote** — tap a suspect to cast your vote. With Suspense mode on, the
+   ballots are then revealed **one at a time** (pass the phone around) before the tally —
+   the suspect is eliminated and revealed to be an **Assassin**.
 7. **Night 2 — protect** — choose someone to protect again.
 8. **Dawn 2** — one of the Virtuous is found eliminated (the Guardian guessed wrong this
    time).
