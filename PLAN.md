@@ -30,7 +30,7 @@ Assassin is caught; the Assassins win when they equal or outnumber everyone else
 
 ## 2. Roles
 
-### ⚖️ Virtuous
+### 🍷 Virtuous
 An ordinary, innocent member of the group, with no special power.
 - **Goal:** work out who the Assassins are and vote them out during the day.
 - **At night:** sleeps (no action).
@@ -107,7 +107,7 @@ own screen and the results arrive one by one.
 
 ## 4. Winning
 
-- ⚖️ **The Virtuous (and the Guardian) win** the moment **every Assassin has been
+- 🍷 **The Virtuous (and the Guardian) win** the moment **every Assassin has been
   eliminated.**
 - 🗡️ **The Assassins win** the moment the number of Assassins is **equal to or greater
   than** the number of remaining Virtuous (at that point they can no longer be

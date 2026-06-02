@@ -365,7 +365,7 @@ scenes.roundSummary = (round) => {
 scenes.win = () => {
   render(`
     <div class="spacer"></div>
-    <div class="scene-emoji">👑</div>
+    <div class="scene-emoji">🍷</div>
     <p class="eyebrow center">Victory</p>
     <h1 class="center" style="color:var(--green);font-size:34px">THE VIRTUOUS WIN</h1>
     <p class="center">Every Assassin has been caught. The Virtuous are safe… until next time.</p>
