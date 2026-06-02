@@ -1,8 +1,8 @@
-# Nightfall — Game Plan
+# Secret Traitor — Game Plan
 
-> **Working title: "Nightfall"** *(placeholder — easy to change). The name and any
-> comparisons to existing TV or tabletop games have been removed so the project stands
-> on its own brand.*
+> Comparisons to existing TV or tabletop games have been kept out of this document so
+> the project stands on its own. Role names below are a starting set — alternatives are
+> still under consideration (see §2).
 
 A free, web-based, mobile-friendly party game of social deduction. By night a hidden
 **Murderer** strikes; by day the village gathers to accuse and vote. Played with a

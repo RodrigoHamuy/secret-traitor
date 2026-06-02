@@ -1,4 +1,4 @@
-/* ===== Nightfall — scripted happy-path demo =====
+/* ===== Secret Traitor — scripted happy-path demo =====
  * No real game logic, no networking. Each scene is hand-scripted and the
  * hint banner + pulsing ring show the user exactly what to tap next.
  */
@@ -73,7 +73,7 @@ scenes.title = () => {
   render(`
     <div class="spacer"></div>
     <p class="eyebrow center">A game of trust &amp; betrayal</p>
-    <h1 class="center">NIGHTFALL</h1>
+    <h1 class="center">SECRET<br>TRAITOR</h1>
     <p class="center">By night someone strikes. By day the village decides who to trust.</p>
     <div class="spacer"></div>
     <button class="btn" id="create">Create Game</button>
@@ -96,7 +96,7 @@ scenes.lobby = () => {
       <p class="eyebrow">Game lobby</p>
       <div class="code-box">
         <div class="code">XR4K</div>
-        <div class="share"><span class="url">nightfall.game/#/join/XR4K</span>
+        <div class="share"><span class="url">secrettraitor.game/#/join/XR4K</span>
           <span class="pill">Copy</span></div>
       </div>
       <p style="margin-bottom:8px">${ready ? 'Everyone’s in!' : 'Waiting for players to join…'}
