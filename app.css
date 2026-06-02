@@ -21,7 +21,8 @@
 
 html, body {
   margin: 0;
-  min-height: 100%;
+  min-height: 100vh;       /* fallback for browsers without dvh */
+  min-height: 100dvh;      /* tracks the visible area as the address bar shows/hides */
   font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
   color: var(--text);
   background: #070504;
@@ -38,7 +39,8 @@ html, body {
   position: relative;
   width: 100%;
   max-width: 400px;
-  height: min(800px, 92vh);
+  height: min(800px, 92vh);    /* fallback */
+  height: min(800px, 92dvh);   /* dynamic viewport: perfect fit as the address bar moves */
   border-radius: 26px;
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(201,162,74,.16), transparent 60%),
