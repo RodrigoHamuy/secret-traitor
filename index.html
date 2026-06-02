@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e0b1a" />
+  <title>Nightfall — Demo</title>
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <!-- Phone frame keeps the demo feeling like a mobile app on desktop too -->
+  <div class="phone">
+    <main id="app" class="app"><!-- scenes render here --></main>
+    <!-- Instructional banner: tells the user what to tap at each step -->
+    <div id="hint" class="hint" hidden>
+      <span class="hint-finger">👆</span>
+      <span id="hint-text" class="hint-text"></span>
+    </div>
+  </div>
+
+  <p class="demo-note">Demo walkthrough · all content is scripted · no real game logic</p>
+
+  <script src="app.js"></script>
+</body>
+</html>
