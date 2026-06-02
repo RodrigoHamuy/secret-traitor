@@ -7,6 +7,22 @@ const app = document.getElementById('app');
 const hintEl = document.getElementById('hint');
 const hintText = document.getElementById('hint-text');
 
+// Where the game lives (GitHub Pages). Join links + QR codes point here.
+const BASE_URL = 'https://rodrigohamuy.github.io/secret-traitor/';
+const ROOM = 'XR4K';
+const JOIN_URL = `${BASE_URL}#/join/${ROOM}`;
+// Shorter, friendlier form for the on-screen link.
+const JOIN_URL_SHORT = `rodrigohamuy.github.io/secret-traitor/#/join/${ROOM}`;
+
+// Build a scannable QR <img> for a URL (falls back gracefully if the lib is blocked).
+function qrImage(text) {
+  if (typeof qrcode !== 'function') return '<div class="qr-fallback">QR</div>';
+  const qr = qrcode(0, 'M');
+  qr.addData(text);
+  qr.make();
+  return qr.createImgTag(5, 12, 'Scan to join');
+}
+
 // ----- Cast (you + 6 friends). Assassins are Eli & Finn. -----
 const COLORS = ['#e8c468', '#57c98a', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a', '#5af0d2'];
 let players = [
@@ -74,6 +90,7 @@ scenes.title = () => {
     <div class="spacer"></div>
     <p class="eyebrow center">A game of trust &amp; betrayal</p>
     <h1 class="center">SECRET<br>TRAITOR</h1>
+    <div class="divider">❦</div>
     <p class="center">By night a traitor strikes. By day the Virtuous decide who to trust.</p>
     <div class="spacer"></div>
     <button class="btn" id="create">Create Game</button>
@@ -95,8 +112,10 @@ scenes.lobby = () => {
     render(`
       <p class="eyebrow">Game lobby</p>
       <div class="code-box">
-        <div class="code">XR4K</div>
-        <div class="share"><span class="url">secrettraitor.game/#/join/XR4K</span>
+        <p class="qr-label">Scan to join</p>
+        <div class="qr-wrap">${qrImage(JOIN_URL)}</div>
+        <div class="code">${ROOM}</div>
+        <div class="share"><span class="url">${JOIN_URL_SHORT}</span>
           <span class="pill">Copy</span></div>
       </div>
       <p style="margin-bottom:8px">${ready ? 'Everyone’s in!' : 'Waiting for players to join…'}
@@ -125,7 +144,7 @@ scenes.roleGuard = () => {
     <div class="reveal">
       <div class="flip" id="flip">
         <div class="face back">
-          <div class="glyph">🂠</div>
+          <div class="glyph">🕯️</div>
           <div class="role-name">Tap to reveal</div>
         </div>
         <div class="face front">
@@ -223,7 +242,7 @@ scenes.dayReveal = (round, name) => {
   const assassinsLeft = players.filter((x) => x.role === 'assassin' && x.alive).length;
   render(`
     <div class="spacer"></div>
-    <div class="scene-emoji">🗳️</div>
+    <div class="scene-emoji">⚖️</div>
     <h2 class="center">The vote is in</h2>
     <p class="center">${avatar(name)} <strong>${name}</strong> is eliminated.</p>
     <p class="center">${name} was ${isKiller
@@ -255,7 +274,7 @@ scenes.roundSummary = (round) => {
 scenes.win = () => {
   render(`
     <div class="spacer"></div>
-    <div class="scene-emoji">🎉</div>
+    <div class="scene-emoji">👑</div>
     <p class="eyebrow center">Victory</p>
     <h1 class="center" style="color:var(--green);font-size:34px">THE VIRTUOUS WIN</h1>
     <p class="center">Every Assassin has been caught. The Virtuous are safe… until next time.</p>
