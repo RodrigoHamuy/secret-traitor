@@ -119,9 +119,10 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   50%      { box-shadow: 0 0 0 6px rgba(232,200,115,.25), 0 0 26px rgba(232,200,115,.5); }
 }
 
-/* Hint banner — an aged ribbon with a pointing hand */
+/* Hint banner — an aged ribbon with a pointing hand.
+ * In normal flow at the bottom of the phone (not overlaid) so it never covers buttons. */
 .hint {
-  position: absolute; left: 16px; right: 16px; bottom: 16px; z-index: 2;
+  flex: none; z-index: 2; margin: 0 14px 14px;
   display: flex; align-items: center; gap: 10px;
   padding: 12px 16px; border-radius: 8px;
   background: linear-gradient(180deg, #efe3c6, #dcc99c);
@@ -129,6 +130,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 13px; letter-spacing: .02em;
   box-shadow: 0 6px 18px rgba(0,0,0,.5), inset 0 0 0 1px rgba(122,93,40,.35);
 }
+.hint[hidden] { display: none; }   /* author display:flex would otherwise override [hidden] */
 .hint-finger { font-size: 22px; line-height: 1; color: #5e3b14; animation: bob 1.2s ease-in-out infinite; }
 @keyframes bob { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
 
