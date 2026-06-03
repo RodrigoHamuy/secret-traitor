@@ -272,7 +272,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .vote-row .avatar { width: 28px; height: 28px; font-size: 11px; }
 .vr-name { max-width: 5.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vr-arrow { color: var(--muted); margin: 0 2px; }
-.tally-count { margin-left: auto; font-size: 16px; color: var(--gold-bright); min-width: 1.4em; text-align: right; }
 
 /* Role reveal card (flip) */
 .reveal { perspective: 1200px; margin: auto 0; }

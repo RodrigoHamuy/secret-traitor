@@ -337,7 +337,7 @@
       <h2 class="center">Who voted for whom</h2>
       <div class="vote-list">${rows}</div>
       <div class="spacer"></div>
-      <button class="btn" id="next">See the count</button>
+      <button class="btn" id="next">See the verdict</button>
     `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => showBanish();
   }
@@ -364,7 +364,7 @@
           </div>
         </div>
       </div>
-      <button class="btn" id="next" disabled>${last ? 'See the count' : 'Hide &amp; pass on'}</button>
+      <button class="btn" id="next" disabled>${last ? 'See the verdict' : 'Hide &amp; pass on'}</button>
     `, { targetSelector: '#flip' });
     const flip = app.querySelector('#flip');
     const next = app.querySelector('#next');
@@ -406,22 +406,14 @@
     next.onclick = () => { if (!next.disabled) then(); };
   }
 
-  // The final tally, shown only once every ballot has been revealed.
-  function tallyBlock() {
-    const counts = Engine.tally(G.votes.map((v) => v.choice)).counts;
-    const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([name, n]) =>
-      `<div class="vote-row">${gAvatar(name)}<span class="vr-name">${esc(name)}</span><span class="tally-count">${n}</span></div>`).join('');
-    return `<div class="vote-list">${rows}</div>`;
-  }
-
   function showBanish() {
     const r = G.res;
     if (!r.banished) {
       render(`
-        <div class="scene-emoji" style="margin-top:8px">⚖️</div>
-        <h2 class="center">The count</h2>
-        ${tallyBlock()}
-        <p class="center">${r.bVotes === 0 ? 'No votes were cast.' : 'It’s a tie.'} No one is banished.</p>
+        <div class="spacer"></div>
+        <div class="scene-emoji">⚖️</div>
+        <h2 class="center">No majority</h2>
+        <p class="center">The vote is split — the table couldn’t agree, so no one is banished.</p>
         <div class="spacer"></div>
         <button class="btn" id="next">Then, under cover of dark…</button>
       `, { targetSelector: '#next' });
@@ -429,10 +421,10 @@
       return;
     }
     render(`
-      <div class="scene-emoji" style="margin-top:8px">⚖️</div>
-      <h2 class="center">The count</h2>
-      ${tallyBlock()}
-      <p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished with ${r.bVotes} vote${r.bVotes > 1 ? 's' : ''}.</p>
+      <div class="spacer"></div>
+      <div class="scene-emoji">⚖️</div>
+      <h2 class="center">The majority has decided</h2>
+      <p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished.</p>
       <p class="center">Hand them the phone to reveal their allegiance.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">Pass the phone to ${esc(r.banished)}</button>
