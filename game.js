@@ -28,8 +28,9 @@
       desc: 'Each round, secretly mark a victim to assassinate — then cast your vote to deflect suspicion.' },
   };
 
-  // Mutable game state.
-  const G = { setup: null, players: [], settings: {}, round: 0,
+  // Mutable game state. `lastHolder` = who held the phone last, so the next round's
+  // pass resumes from the seat beside them (i.e. beside whoever was just revealed).
+  const G = { setup: null, players: [], settings: {}, round: 0, lastHolder: null,
               order: [], kills: [], protects: [], votes: [], res: null };
 
   // --- small helpers ---
@@ -47,14 +48,27 @@
     if (r === 'guardian') return 'the <strong style="color:#86a6d0">Guardian</strong>';
     return 'one of the <strong style="color:var(--green)">Virtuous</strong>';
   }
+  // Uncoloured form for use on the parchment card face (the big label carries the colour).
+  const plainRoleWord = (r) => r === 'assassin' ? 'an Assassin' : r === 'guardian' ? 'the Guardian' : 'one of the Virtuous';
+  // Alive players in seating order, starting from the seat AFTER `startName` (wraps).
+  function aliveOrderFrom(startName) {
+    const n = G.players.length;
+    let start = G.players.findIndex((p) => p.name === startName);
+    const out = [];
+    for (let k = 1; k <= n; k++) {
+      const p = G.players[(start + k + n) % n];
+      if (p.alive) out.push(p);
+    }
+    return out;
+  }
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
-  const aliveAssassins = () => G.players.filter((p) => p.role === 'assassin' && p.alive).length;
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
 
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
   // screen only renders once the recipient confirms — nothing leaks while passing.
   function gate(who, then, opts = {}) {
+    G.lastHolder = who; // whoever takes the phone is now the latest holder
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">📱</div>
@@ -176,7 +190,8 @@
       <button class="btn" id="next">Pass the phone around</button>
     `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => {
-      G.order = alivePlayers();
+      // Resume beside whoever last held the phone (the player just revealed).
+      G.order = aliveOrderFrom(G.lastHolder);
       G.kills = []; G.protects = []; G.votes = [];
       turn(0);
     };
@@ -245,69 +260,108 @@
     app.querySelector('#next').onclick = () => voteRevealPublic(i + 1);
   }
 
+  // A face-down card the just-eliminated player flips to reveal their own role to
+  // the table — the app announces who fell, but never spoils their allegiance.
+  function revealRoleCard(name, { eyebrow, title }, then) {
+    const p = G.players.find((x) => x.name === name);
+    const info = ROLE_INFO[p.role];
+    render(`
+      <p class="eyebrow center" style="margin-top:6px">${esc(eyebrow)}</p>
+      <h2 class="center">${esc(title)}</h2>
+      <div class="reveal">
+        <div class="flip" id="flip">
+          <div class="face back"><div class="glyph">🤫</div><div class="role-name">Tap to reveal</div></div>
+          <div class="face front">
+            <div class="glyph">${info.glyph}</div>
+            <div class="role-name ${info.cls}">${info.label}</div>
+            <p style="margin-top:12px">${esc(name)} was ${plainRoleWord(p.role)}.</p>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="next" disabled>Continue</button>
+    `, { targetSelector: '#flip' });
+    const flip = app.querySelector('#flip');
+    const next = app.querySelector('#next');
+    flip.onclick = () => {
+      if (flip.classList.contains('flipped')) return;
+      flip.classList.add('flipped');
+      next.disabled = false; next.classList.add('target');
+    };
+    next.onclick = () => { if (!next.disabled) then(); };
+  }
+
   function showBanish() {
     const r = G.res;
-    let body;
     if (!r.banished) {
-      body = `<p class="center">${r.bVotes === 0 ? 'No votes were cast.' : 'The vote was tied.'} No one is banished.</p>`;
-    } else {
-      body = `<p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished with ${r.bVotes} vote${r.bVotes > 1 ? 's' : ''}.</p>
-        <p class="center">${esc(r.banished)} was ${roleWord(r.bRole)}.</p>`;
+      render(`
+        <div class="spacer"></div>
+        <div class="scene-emoji">⚖️</div>
+        <h2 class="center">The vote is in</h2>
+        <p class="center">${r.bVotes === 0 ? 'No votes were cast.' : 'The vote was tied.'} No one is banished.</p>
+        <div class="spacer"></div>
+        <button class="btn" id="next">Then, under cover of dark…</button>
+      `, { targetSelector: '#next' });
+      app.querySelector('#next').onclick = () => resolveAssassination();
+      return;
     }
-    // If banishing ended the game (e.g. the last Assassin is caught), the strike never lands.
-    const cancelled = r.winAfterBanish && r.bRole === 'assassin';
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">⚖️</div>
       <h2 class="center">The vote is in</h2>
-      ${body}
-      ${cancelled ? `<p class="center">With the last Assassin caught, their strike never lands.</p>` : ''}
+      <p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished with ${r.bVotes} vote${r.bVotes > 1 ? 's' : ''}.</p>
+      <p class="center">Hand them the phone to reveal their allegiance.</p>
       <div class="spacer"></div>
-      <button class="btn" id="next">${r.winAfterBanish ? 'See the outcome' : 'Then, under cover of dark…'}</button>
+      <button class="btn" id="next">Pass the phone to ${esc(r.banished)}</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => (r.winAfterBanish ? win(r.winner) : resolveAssassination());
+    app.querySelector('#next').onclick = () => gate(r.banished, () =>
+      revealRoleCard(r.banished, { eyebrow: `Banished · round ${G.round}`, title: `${r.banished}, reveal yourself` }, afterBanishReveal));
+  }
+
+  function afterBanishReveal() {
+    const r = G.res;
+    return r.winAfterBanish ? win(r.winner) : resolveAssassination();
   }
 
   function resolveAssassination() {
     const r = G.res;
+    if (r.outcome === 'killed') {
+      render(`
+        <div class="spacer"></div>
+        <div class="scene-emoji">🌅</div>
+        <h2 class="center">Dawn breaks</h2>
+        <p class="center">${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong> was found slain in the night.</p>
+        <p class="center">Hand them the phone to reveal their allegiance.</p>
+        <div class="spacer"></div>
+        <button class="btn" id="next">Pass the phone to ${esc(r.victim)}</button>
+      `, { targetSelector: '#next' });
+      app.querySelector('#next').onclick = () => gate(r.victim, () =>
+        revealRoleCard(r.victim, { eyebrow: `Slain · round ${G.round}`, title: `${r.victim}, reveal yourself` }, proceedAfterRound));
+      return;
+    }
     let body;
-    if (r.outcome === 'none') {
-      body = `<p class="center">No blade finds its mark. The night passes without bloodshed.</p>`;
-    } else if (r.outcome === 'already') {
-      body = `<p class="center">The Assassins crept toward ${esc(r.victim)}… but justice had already claimed them.</p>`;
-    } else if (r.outcome === 'saved') {
+    if (r.outcome === 'saved') {
       body = `<p class="center">A blade flashed at ${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong>…
         but the Guardian’s shield held. <strong style="color:var(--green)">They survive.</strong></p>`;
-    } else { // killed
-      body = `<p class="center">${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong> was found slain.</p>
-        <p class="center">${esc(r.victim)} was ${roleWord(r.victimRole)}.</p>`;
+    } else if (r.outcome === 'already') {
+      body = `<p class="center">The Assassins crept toward ${esc(r.victim)}… but justice had already claimed them.</p>`;
+    } else {
+      body = `<p class="center">No blade finds its mark. The night passes without bloodshed.</p>`;
     }
-    const w = r.winner;
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">🌅</div>
       <h2 class="center">Dawn breaks</h2>
       ${body}
       <div class="spacer"></div>
-      <button class="btn" id="next">${w ? 'See the outcome' : 'Continue'}</button>
+      <button class="btn" id="next">${r.winner ? 'See the outcome' : 'Continue'}</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => (w ? win(w) : roundSummary());
+    app.querySelector('#next').onclick = () => proceedAfterRound();
   }
 
-  function roundSummary() {
-    const alive = aliveNames().length;
-    const assassins = aliveAssassins();
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">🔎</div>
-      <h2 class="center">The hunt continues</h2>
-      <p class="center"><span class="pill">${alive} still alive</span></p>
-      <p class="center"><strong style="color:var(--red)">${assassins} Assassin${assassins > 1 ? 's' : ''}</strong>
-        still hide among you.</p>
-      <div class="spacer"></div>
-      <button class="btn" id="next">Begin the next round</button>
-    `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => { G.round++; roundIntro(); };
+  function proceedAfterRound() {
+    if (G.res.winner) return win(G.res.winner);
+    G.round++;
+    roundIntro();
   }
 
   function win(team) {
