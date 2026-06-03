@@ -351,9 +351,22 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 /* Dawn reveal: the fallen/spared player's portrait is the focal point. */
 .dawn-portrait { display: flex; justify-content: center; margin: 8px 0 16px; }
 .dawn-portrait .avatar {
-  width: 100%; height: auto; aspect-ratio: 1 / 1;
+  width: 100%; height: auto; aspect-ratio: 1 / 1; position: relative;
   border-radius: 14px; font-size: 88px;
 }
+/* Elimination reveal: the portrait starts in full colour and drains to its fate
+   tint (grey for banished, grey + blood-red for slain). Ends matching the static
+   .avatar.banished / .avatar.slain look so later screens stay consistent. */
+.dawn-portrait.fade-banished .avatar { animation: drain-grey 1.5s ease-out .3s both; }
+.dawn-portrait.fade-slain .avatar { animation: drain-slain 1.5s ease-out .3s both; }
+.dawn-portrait.fade-slain .avatar::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: rgba(120,18,18,.30); mix-blend-mode: multiply;
+  animation: fade-in 1.5s ease-out .3s both;
+}
+@keyframes drain-grey  { from { filter: none; } to { filter: grayscale(.5); } }
+@keyframes drain-slain { from { filter: none; } to { filter: grayscale(1) contrast(.95) brightness(.92); } }
+@keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
 /* A dead player's avatar anywhere it appears: banished drains to grey,
    killed drains to grey with a blood-red tint. */
 .avatar.banished, .avatar.slain { position: relative; }

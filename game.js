@@ -137,6 +137,9 @@
     }
     return out;
   }
+  // Commit an elimination (deferred from resolveRound so the portrait stays coloured
+  // through the vote reveal, then animates to grey at its own reveal screen).
+  const markDead = (name, fate) => { const p = G.players.find((x) => x.name === name); if (p) { p.alive = false; p.fate = fate; } };
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
@@ -663,9 +666,9 @@
     if (!plan.banished && !G.revoted && G.votes.some((v) => v.choice)) {
       return deadlockIntro();
     }
-    // Apply the deaths the plan decided (banishment always; assassination only if it landed).
-    if (plan.banished) { const p = G.players.find((x) => x.name === plan.banished); if (p) { p.alive = false; p.fate = 'banished'; } }
-    if (plan.outcome === 'killed') { const p = G.players.find((x) => x.name === plan.victim); if (p) { p.alive = false; p.fate = 'killed'; } }
+    // Deaths are NOT applied yet — players stay coloured through the vote reveal.
+    // Each elimination is committed at its own reveal (showBanish / dawn), where the
+    // portrait animates from colour to grey. See markDead().
     G.res = plan;
     return revealVotesIntro();
   }
@@ -807,15 +810,18 @@
       <div class="spacer"></div>
       <div class="scene-emoji">${r.tieBroken ? '🎲' : '⚖️'}</div>
       <h2 class="center">${r.tieBroken ? 'Still deadlocked — fate decides' : 'The majority has decided'}</h2>
-      <div class="dawn-portrait">${gAvatar(r.banished)}</div>
+      <div class="dawn-portrait fade-banished">${gAvatar(r.banished)}</div>
       ${r.tieBroken
         ? `<p class="center">The table tied again. With no majority, lots are drawn — and they fall on <strong>${esc(r.banished)}</strong>, who is banished.</p>`
         : `<p class="center"><strong>${esc(r.banished)}</strong> is banished.</p>`}
       <div class="spacer"></div>
       <button class="btn" id="next">Pass the phone to ${esc(r.banished)}</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => gate(r.banished, () =>
-      revealRoleCard(r.banished, { eyebrow: `Banished · round ${G.round}`, title: `${r.banished}, reveal yourself` }, afterBanishReveal));
+    app.querySelector('#next').onclick = () => {
+      markDead(r.banished, 'banished'); // commit now so later screens stay greyed
+      gate(r.banished, () =>
+        revealRoleCard(r.banished, { eyebrow: `Banished · round ${G.round}`, title: `${r.banished}, reveal yourself` }, afterBanishReveal));
+    };
   }
 
   function afterBanishReveal() {
@@ -830,13 +836,16 @@
         <div class="spacer"></div>
         <div class="scene-emoji">🌅</div>
         <h2 class="center">Dawn breaks</h2>
-        <div class="dawn-portrait slain">${gAvatar(r.victim)}</div>
+        <div class="dawn-portrait fade-slain">${gAvatar(r.victim)}</div>
         <p class="center"><strong>${esc(r.victim)}</strong> was found slain in the night.</p>
         <div class="spacer"></div>
         <button class="btn" id="next">Pass the phone to ${esc(r.victim)}</button>
       `, { targetSelector: '#next' });
-      app.querySelector('#next').onclick = () => gate(r.victim, () =>
-        revealRoleCard(r.victim, { eyebrow: `Slain · round ${G.round}`, title: `${r.victim}, reveal yourself` }, proceedAfterRound));
+      app.querySelector('#next').onclick = () => {
+        markDead(r.victim, 'killed'); // commit now so later screens stay greyed
+        gate(r.victim, () =>
+          revealRoleCard(r.victim, { eyebrow: `Slain · round ${G.round}`, title: `${r.victim}, reveal yourself` }, proceedAfterRound));
+      };
       return;
     }
     let body;
