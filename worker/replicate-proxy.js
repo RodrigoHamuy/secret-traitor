@@ -1,107 +1,101 @@
-/* Secret Traitor — Replicate proxy (Cloudflare Worker)
+/* Secret Traitor — Replicate CORS proxy (Cloudflare Worker)
  *
  * Why this exists: the browser can't call api.replicate.com directly because
  * Replicate sends no CORS headers, so a static site (GitHub Pages) gets blocked.
- * This Worker is a thin, STATELESS pass-through: it adds CORS headers and forwards
- * the player's own token to Replicate's official-model prediction endpoint.
  *
- * It stores NO secrets and keeps NO data — the token arrives in the request body
- * from the player and is used only for that one forwarded call. Replicate itself
- * auto-deletes prediction inputs/outputs within ~1 hour.
+ * What it is: a thin, STATELESS, transparent reverse proxy to api.replicate.com.
+ * Whatever path, method, query and body the client sends, it forwards verbatim —
+ * it injects the caller's token as the Authorization header and adds CORS headers
+ * on the way back. It knows nothing about predictions, polling, versions or models;
+ * the CLIENT owns the entire Replicate contract. That makes this a generic proxy to
+ * ANY Replicate endpoint (create a prediction, poll it, list models, etc.).
+ *
+ *   Client request                          ->  Forwarded to
+ *   POST  {proxy}/v1/predictions                POST  https://api.replicate.com/v1/predictions
+ *   GET   {proxy}/v1/predictions/{id}           GET   https://api.replicate.com/v1/predictions/{id}
+ *   POST  {proxy}/v1/models/{owner}/{name}/predictions  -> same path on api.replicate.com
+ *
+ * The token NEVER lives in the Worker. It arrives per-request from the caller in the
+ * `X-Replicate-Token` header (preferred) or a standard `Authorization: Bearer …`
+ * header, and is used only for that one forwarded call. Replicate itself auto-deletes
+ * prediction inputs/outputs within ~1 hour.
+ *
+ * Security note: because this forwards anything, anyone can drive any Replicate API
+ * call through it — but only ever with their OWN token, which they must supply. The
+ * Worker holds no secrets, so an open proxy just means "bring your own key." If abuse
+ * volume ever matters, add an Origin allowlist or rate limiting below.
  *
  * Deploy with `wrangler deploy` (see README.md), then set PORTRAIT_PROXY_URL in
  * game.js to the resulting *.workers.dev URL.
  */
 
-// Open CORS: any origin may call this Worker. That's acceptable here because the
-// Worker holds no secrets of its own — every request must carry the *caller's* own
-// Replicate token, so an open policy just means "anyone with their own token can use
-// it." If abuse/request volume ever matters, swap this back to an allowlist.
-function corsHeaders() {
+const REPLICATE_ORIGIN = 'https://api.replicate.com';
+
+// Open CORS: any origin may call this Worker (it holds no secrets of its own).
+// We echo the requested headers so a browser preflight for X-Replicate-Token passes.
+function corsHeaders(request) {
+  const reqHeaders = request.headers.get('Access-Control-Request-Headers');
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': reqHeaders || 'Content-Type, Authorization, X-Replicate-Token, Prefer',
+    'Access-Control-Max-Age': '86400',
   };
 }
 
 export default {
   async fetch(request) {
-    const cors = corsHeaders();
+    const cors = corsHeaders(request);
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors });
     }
-    if (request.method !== 'POST') {
-      return json({ error: 'Method not allowed' }, 405, cors);
-    }
 
-    let body;
+    // The caller's token: X-Replicate-Token, or a passed-through Authorization header.
+    const auth = request.headers.get('X-Replicate-Token') || request.headers.get('Authorization');
+    if (!auth) {
+      return json({ error: 'Missing Replicate token (send X-Replicate-Token or Authorization)' }, 401, cors);
+    }
+    // Accept a raw token or an already-formed "Bearer …" value.
+    const authorization = /^Bearer\s/i.test(auth) ? auth : `Bearer ${auth}`;
+
+    // Map the incoming path (+query) onto api.replicate.com, untouched. We only guard
+    // that it stays under the Replicate API surface — no open redirect to other hosts.
+    const url = new URL(request.url);
+    if (!url.pathname.startsWith('/v1/')) {
+      return json({ error: 'Path must begin with /v1/ (the Replicate API path to forward)' }, 400, cors);
+    }
+    const target = REPLICATE_ORIGIN + url.pathname + url.search;
+
+    // Forward method, body and the Prefer header verbatim; the client decides whether
+    // to send `Prefer: wait`, what body shape to use, and how/whether to poll.
+    const forwardHeaders = { 'Authorization': authorization };
+    const contentType = request.headers.get('Content-Type');
+    if (contentType) forwardHeaders['Content-Type'] = contentType;
+    const prefer = request.headers.get('Prefer');
+    if (prefer) forwardHeaders['Prefer'] = prefer;
+
+    const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
+    let upstream;
     try {
-      body = await request.json();
-    } catch {
-      return json({ error: 'Invalid JSON body' }, 400, cors);
+      upstream = await fetch(target, {
+        method: request.method,
+        headers: forwardHeaders,
+        body: hasBody ? request.body : undefined,
+        // Streaming a request body through fetch requires duplex: 'half'.
+        ...(hasBody ? { duplex: 'half' } : {}),
+      });
+    } catch (err) {
+      return json({ error: 'Upstream fetch failed', detail: String(err) }, 502, cors);
     }
 
-    const { token, model, input } = body || {};
-    if (!token || typeof token !== 'string') {
-      return json({ error: 'Missing Replicate token' }, 400, cors);
-    }
-    if (!model || !/^[\w.-]+\/[\w.-]+$/.test(model)) {
-      return json({ error: 'Missing or invalid model' }, 400, cors);
-    }
-    if (!input || typeof input !== 'object') {
-      return json({ error: 'Missing input' }, 400, cors);
-    }
-
-    // Forward to Replicate's official-model endpoint. `Prefer: wait` keeps the
-    // request open until the prediction finishes (up to 60s) so the client gets
-    // the result in one round-trip.
-    const upstream = await fetch(
-      `https://api.replicate.com/v1/models/${model}/predictions`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'wait',
-        },
-        body: JSON.stringify({ input }),
-      },
-    );
-
-    let pred;
-    try {
-      pred = await upstream.json();
-    } catch {
-      return json({ error: 'Upstream returned non-JSON', status: upstream.status }, 502, cors);
-    }
-
-    // If the model didn't finish within the wait window, poll until it does.
-    if (pred && (pred.status === 'starting' || pred.status === 'processing')) {
-      pred = await poll(pred, token);
-    }
-
-    return json(pred, upstream.ok ? 200 : upstream.status, cors);
+    // Return Replicate's response verbatim (status + body), just with CORS added.
+    const respHeaders = new Headers(cors);
+    const upstreamType = upstream.headers.get('Content-Type');
+    if (upstreamType) respHeaders.set('Content-Type', upstreamType);
+    return new Response(upstream.body, { status: upstream.status, headers: respHeaders });
   },
 };
-
-// Poll the prediction's get URL until it reaches a terminal state (cap ~90s).
-async function poll(pred, token) {
-  const getUrl = pred?.urls?.get;
-  if (!getUrl) return pred;
-  for (let i = 0; i < 30; i++) {
-    await new Promise((r) => setTimeout(r, 3000));
-    const res = await fetch(getUrl, { headers: { 'Authorization': `Bearer ${token}` } });
-    const next = await res.json().catch(() => null);
-    if (!next) return pred;
-    pred = next;
-    if (pred.status === 'succeeded' || pred.status === 'failed' || pred.status === 'canceled') {
-      return pred;
-    }
-  }
-  return pred;
-}
 
 function json(obj, status, cors) {
   return new Response(JSON.stringify(obj), {

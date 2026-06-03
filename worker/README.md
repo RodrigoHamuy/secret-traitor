@@ -1,23 +1,38 @@
 # Replicate proxy (optional)
 
 Secret Traitor's optional **period-portrait** feature paints each player's selfie into a
-16th-century oil portrait using [FLUX.1 Kontext](https://replicate.com/black-forest-labs/flux-kontext-pro)
-on Replicate. The game is a static site, but browsers can't call `api.replicate.com`
+16th-century oil portrait using [InstantID](https://replicate.com/zsxkib/instant-id) on
+Replicate. The game is a static site, but browsers can't call `api.replicate.com`
 directly — Replicate sends no CORS headers
 ([known limitation](https://github.com/replicate/replicate-javascript/issues/164)). This
-tiny [Cloudflare Worker](./replicate-proxy.js) is a stateless pass-through that adds CORS
-and forwards the player's own token to Replicate.
+tiny [Cloudflare Worker](./replicate-proxy.js) is a **transparent CORS proxy**: whatever
+`/v1/*` path the client hits, it forwards verbatim to `api.replicate.com`, injecting the
+player's own token. It knows nothing about predictions or polling — the client owns the
+whole Replicate contract — so it works as a generic proxy to any Replicate endpoint.
 
 If you don't deploy it, the game works exactly as before: selfies stay plain initials/photos
 and the token field does nothing.
 
+## Request contract
+
+The client sends the token in an `X-Replicate-Token` header (a passed-through
+`Authorization: Bearer …` also works) and puts the Replicate API path in the URL:
+
+```
+POST {proxy}/v1/predictions            ->  create a prediction  (body forwarded verbatim)
+GET  {proxy}/v1/predictions/{id}       ->  poll it to completion
+```
+
+Only paths under `/v1/` are forwarded (no open redirect to other hosts). The `Prefer`
+header is passed through, so the client can use `Prefer: wait` for a one-shot result.
+
 ## Privacy
 
-- **The Worker stores nothing.** The token arrives in the request body and is used only to
-  forward that single call. No secrets are baked into the Worker.
+- **The Worker stores nothing.** The token arrives per request in a header and is used only
+  to forward that single call. No secrets are baked into the Worker.
 - **Replicate auto-deletes** all prediction inputs, outputs, and logs within ~1 hour by
   default ([data-retention docs](https://replicate.com/docs/topics/predictions/data-retention)).
-- FLUX.1 Kontext runs on Replicate's own GPUs (not relayed to a third party), and Replicate
+- InstantID runs on Replicate's own GPUs (not relayed to a third party), and Replicate
   states it does not sell or share personal information ([privacy policy](https://replicate.com/privacy)).
 - The token lives only in memory on the player's phone — the app never saves it.
 

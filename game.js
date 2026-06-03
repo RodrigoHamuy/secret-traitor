@@ -21,12 +21,26 @@
 
   // ----- Period-portrait enhancement (optional, bring-your-own Replicate token) -----
   // The browser can't call api.replicate.com directly (no CORS), so requests go through
-  // a tiny stateless proxy that just forwards the player's token. Deploy your own and
-  // point this at it — see worker/README.md. The proxy stores no secrets.
+  // a thin transparent CORS proxy that forwards whatever Replicate API path we hit and
+  // injects the player's token. Deploy your own and point this at it — see worker/README.md.
+  // The proxy stores no secrets. This is the proxy ORIGIN; we append the API path below.
   const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.hamuyrodrigo.workers.dev';
-  // FLUX.1 Kontext: instruction-based image editing that keeps the person's likeness.
-  // Replicate runs it on its own GPUs and auto-deletes inputs/outputs within ~1 hour.
-  const PORTRAIT_MODEL = 'black-forest-labs/flux-kontext-max';
+  // InstantID: identity-preserving generation. Unlike an image *editor* (Kontext),
+  // it extracts a face embedding from the selfie and LOCKS onto it while generating a
+  // fresh scene around it — so the costume/background can change freely without the
+  // face drifting. Replicate auto-deletes inputs/outputs within ~1 hour.
+  // InstantID is a *community* model, run by version id. We POST { version, input } to
+  // /v1/predictions through the proxy. PORTRAIT_MODEL is just a human label for which
+  // model PORTRAIT_VERSION pins; bump the version from the model's Replicate page.
+  const PORTRAIT_MODEL = 'zsxkib/instant-id'; // label only — requests use the version
+  const PORTRAIT_VERSION = '2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789';
+  // The likeness dials (per Replicate's schema). Higher = closer to the real person,
+  // less "imagination"; lower = more painterly but drifts. Defaults are 0.8/0.8.
+  //   IDENTITY_FIDELITY -> controlnet_conditioning_scale ("IdentityNet strength, for
+  //     fidelity") — this is the main face-likeness lever. Push UP if faces look off.
+  //   FACE_DETAIL       -> ip_adapter_scale ("image adapter strength, for detail").
+  const IDENTITY_FIDELITY = 1.0;    // controlnet_conditioning_scale (likeness)
+  const FACE_DETAIL = 0.9;          // ip_adapter_scale (facial detail)
 
   // Each player gets a randomly assigned 16th-century character so portraits look
   // distinct at a glance — different role, dress, setting and palette per person.
@@ -56,20 +70,19 @@
     return PORTRAIT_CHARACTERS[((index * 7) % PORTRAIT_CHARACTERS.length + PORTRAIT_CHARACTERS.length) % PORTRAIT_CHARACTERS.length];
   }
 
+  // InstantID generates a fresh scene around the locked face, so the prompt is a
+  // positive *description* of the whole portrait (not an edit instruction). The face
+  // itself comes from the embedding — we just describe the costume, framing and style.
   function portraitPrompt(index) {
-    // Kontext weights the START of the prompt most heavily and treats the named
-    // edit as the thing to change. So we lead with "keep this exact face", frame
-    // the change as *only* costume + background, and keep the painterly styling
-    // light — heavy "repaint/brushstrokes/craquelure" language makes it re-render
-    // the face from scratch and lose the person's likeness.
-    return 'Keep this exact person — same face, same facial features, same skin tone, ' +
-      'same hair, same age, same expression and head angle. Do not change the face. ' +
-      'Only change their clothing and the background: dress them as ' +
-      characterFor(index) + '. ' +
-      'Frame as a head-and-shoulders portrait. Give it the soft, warm lighting and ' +
-      'muted colour of a 16th-century Renaissance oil painting, but keep the face ' +
-      'sharp and photo-accurate.';
+    return 'A 16th-century Renaissance oil portrait of ' + characterFor(index) + '. ' +
+      'Head-and-shoulders close-up, soft warm lighting, muted period colour, ' +
+      'painted in the style of an old master, fine detail.';
   }
+
+  // Steers the generation away from the failure modes that read as "not them" —
+  // distortion, extra/altered faces, cartoonish output.
+  const PORTRAIT_NEGATIVE = 'different person, distorted face, deformed, disfigured, ' +
+    'extra face, multiple faces, plastic skin, cartoon, anime, 3d render, blurry, lowres';
 
   const ROLE_INFO = {
     virtuous: { label: 'VIRTUOUS', cls: 'role-virtuous', glyph: '🍷',
@@ -320,19 +333,19 @@
     const selfie = p.photo; // capture now in case the player retakes later
     const prompt = portraitPrompt(G.players.indexOf(p));
 
-    // The proxy adds the Authorization header from `token` and forwards to Replicate's
-    // official-model endpoint with `Prefer: wait`, so this resolves with the finished
-    // prediction in one round-trip (it falls back to polling if the model runs long).
-    fetch(PORTRAIT_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token,
-        model: PORTRAIT_MODEL,
-        input: { prompt, input_image: selfie, output_format: 'jpg' },
-      }),
+    // InstantID input: `image` is the face to lock onto; the two *_scale params
+    // control how hard the identity is enforced (see the dials above).
+    runReplicate(token, {
+      version: PORTRAIT_VERSION,
+      input: {
+        image: selfie,
+        prompt,
+        negative_prompt: PORTRAIT_NEGATIVE,
+        ip_adapter_scale: FACE_DETAIL,
+        controlnet_conditioning_scale: IDENTITY_FIDELITY,
+        output_format: 'jpg',
+      },
     })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
       .then((pred) => {
         const url = Array.isArray(pred.output) ? pred.output[0] : pred.output;
         if (pred.status !== 'succeeded' || !url) {
@@ -348,6 +361,33 @@
       })
       .catch((err) => console.warn(`Portrait enhancement failed for ${p.name}:`, err))
       .finally(() => { p.enhancing = false; markEnhancing(p.name, false); });
+  }
+
+  // ---- Replicate client (talks to the transparent CORS proxy) ----
+  // The proxy forwards whatever /v1/* path we hit and injects the token, so the
+  // client owns the full contract: create a prediction, then poll it to a terminal
+  // state. `Prefer: wait` lets the create call return a finished result in one shot
+  // when the model is warm; otherwise we poll the prediction's own get URL.
+  function runReplicate(token, createBody) {
+    const headers = { 'Content-Type': 'application/json', 'X-Replicate-Token': token, 'Prefer': 'wait' };
+    return fetch(PORTRAIT_PROXY_URL + '/v1/predictions', {
+      method: 'POST', headers, body: JSON.stringify(createBody),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((pred) => pollPrediction(pred, token));
+  }
+
+  function pollPrediction(pred, token, tries = 30) {
+    const done = (s) => s === 'succeeded' || s === 'failed' || s === 'canceled';
+    if (done(pred.status) || tries <= 0) return pred;
+    const getUrl = pred && pred.urls && pred.urls.get;
+    if (!getUrl) return pred;
+    // The get URL is an absolute api.replicate.com URL; route it back through the proxy.
+    const proxied = PORTRAIT_PROXY_URL + new URL(getUrl).pathname;
+    return new Promise((resolve) => setTimeout(resolve, 3000))
+      .then(() => fetch(proxied, { headers: { 'X-Replicate-Token': token } }))
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((next) => pollPrediction(next, token, tries - 1));
   }
 
   // Fetch the generated image and inline it as a data URL so the avatar keeps working
@@ -424,7 +464,7 @@
     app.querySelector('#next').onclick = () => {
       // Resume beside whoever last held the phone (the player just revealed).
       G.order = aliveOrderFrom(G.lastHolder);
-      G.kills = []; G.protects = []; G.votes = [];
+      G.kills = []; G.protects = []; G.votes = []; G.revoted = false;
       turn(0);
     };
   }
@@ -456,24 +496,56 @@
     }
   }
 
-  function voteStep(i) {
+  function voteStep(i, next = turn) {
     const p = G.order[i];
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
-      emoji: '🗳️', eyebrow: `Round ${G.round} · VOTE`, title: `${p.name}, who do you vote to banish?`,
+      emoji: '🗳️', eyebrow: `Round ${G.round}${G.revoted ? ' · RE-VOTE' : ''} · VOTE`,
+      title: `${p.name}, who do you vote to banish?`,
       sub: 'You only cast a vote — whoever the majority picks is banished.', list: options, cta: 'Cast vote',
-      onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); turn(i + 1); },
+      onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); next(i + 1); },
     });
   }
 
   // ---------- Resolution ----------
+  // Draws aren't allowed. On a first split vote the table debates and votes again;
+  // a second split is broken by a random banishment (forceBanish on the re-vote).
   function resolveRound() {
-    const plan = Engine.resolveRound({ players: G.players, kills: G.kills, protects: G.protects, votes: G.votes });
+    const plan = Engine.resolveRound({ players: G.players, kills: G.kills,
+      protects: G.protects, votes: G.votes, forceBanish: G.revoted });
+    // First-round split with at least one vote cast: deadlock -> re-vote.
+    if (!plan.banished && !G.revoted && G.votes.some((v) => v.choice)) {
+      return deadlockIntro();
+    }
     // Apply the deaths the plan decided (banishment always; assassination only if it landed).
     if (plan.banished) { const p = G.players.find((x) => x.name === plan.banished); if (p) p.alive = false; }
     if (plan.outcome === 'killed') { const p = G.players.find((x) => x.name === plan.victim); if (p) p.alive = false; }
     G.res = plan;
     return revealVotesIntro();
+  }
+
+  // The first vote tied. Announce the deadlock, let the table debate again, then
+  // re-collect everyone's vote (kills/protects already chosen this round stand).
+  function deadlockIntro() {
+    G.revoted = true;
+    G.order = aliveOrderFrom(G.lastHolder);
+    G.votes = [];
+    render(`
+      <div class="spacer"></div>
+      <div class="scene-emoji">⚖️</div>
+      <h2 class="center">The vote is deadlocked</h2>
+      <p class="center">No one has a majority. Debate once more — then pass the phone around to vote again.</p>
+      <p class="center"><span class="pill">If it's still a tie, fate decides</span></p>
+      <div class="spacer"></div>
+      <button class="btn" id="next">Vote again</button>
+    `, { targetSelector: '#next' });
+    app.querySelector('#next').onclick = () => revoteTurn(0);
+  }
+
+  // Re-vote pass: only collect votes, skipping the role actions (already done).
+  function revoteTurn(i) {
+    if (i >= G.order.length) return resolveRound();
+    gate(G.order[i].name, () => voteStep(i, revoteTurn));
   }
 
   // After everyone has voted, a reveal phase shows who voted for whom — never a
@@ -587,9 +659,11 @@
     }
     render(`
       <div class="spacer"></div>
-      <div class="scene-emoji">⚖️</div>
-      <h2 class="center">The majority has decided</h2>
-      <p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished.</p>
+      <div class="scene-emoji">${r.tieBroken ? '🎲' : '⚖️'}</div>
+      <h2 class="center">${r.tieBroken ? 'Still deadlocked — fate decides' : 'The majority has decided'}</h2>
+      ${r.tieBroken
+        ? `<p class="center">The table tied again. With no majority, lots are drawn — and they fall on ${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong>, who is banished.</p>`
+        : `<p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished.</p>`}
       <p class="center">Hand them the phone to reveal their allegiance.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">Pass the phone to ${esc(r.banished)}</button>
@@ -610,8 +684,8 @@
         <div class="spacer"></div>
         <div class="scene-emoji">🌅</div>
         <h2 class="center">Dawn breaks</h2>
-        <p class="center">${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong> was found slain in the night.</p>
-        <p class="center">Hand them the phone to reveal their allegiance.</p>
+        <div class="dawn-portrait slain">${gAvatar(r.victim)}</div>
+        <p class="center"><strong>${esc(r.victim)}</strong> was found slain in the night.</p>
         <div class="spacer"></div>
         <button class="btn" id="next">Pass the phone to ${esc(r.victim)}</button>
       `, { targetSelector: '#next' });
@@ -621,7 +695,8 @@
     }
     let body;
     if (r.outcome === 'saved') {
-      body = `<p class="center">A blade flashed at ${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong>…
+      body = `<div class="dawn-portrait">${gAvatar(r.victim)}</div>
+        <p class="center">A blade flashed at <strong>${esc(r.victim)}</strong>…
         but the Guardian’s shield held. <strong style="color:var(--green)">They survive.</strong></p>`;
     } else if (r.outcome === 'already') {
       body = `<p class="center">The Assassins crept toward ${esc(r.victim)}… but justice had already claimed them.</p>`;
