@@ -139,7 +139,7 @@
   }
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
-  const defaultNames = (k) => Array.from({ length: k }, () => '');
+  const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
 
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
   // screen only renders once the recipient confirms — nothing leaks while passing.
@@ -158,18 +158,32 @@
 
   // A "choose a player" screen. `emoji` is a big banner icon so a player doing two
   // selections in a turn can tell at a glance which action they're on.
-  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel, cta = 'Confirm' }) {
+  // A 2-step "Vote › Special" progress hint for roles that act after voting.
+  // steps = { labels: ['Vote', 'Protect'], active: 0 }.
+  function stepperHTML(steps) {
+    if (!steps) return '';
+    const cells = steps.labels.map((label, i) => {
+      const cls = i < steps.active ? 'done' : i === steps.active ? 'active' : '';
+      return `<span class="step ${cls}"><span class="step-num">${i + 1}</span>${esc(label)}</span>`;
+    }).join('<span class="step-sep">›</span>');
+    return `<div class="stepper">${cells}</div>`;
+  }
+
+  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel, cta = 'Confirm', ctaEmoji, steps }) {
     const cells = list.map((name) =>
       `<button class="pick" data-name="${esc(name)}">${gAvatar(name)}<span class="name">${esc(name)}</span></button>`
     ).join('');
     const c = emoji ? ' class="center"' : '';
     render(`
+      ${stepperHTML(steps)}
       ${emoji ? `<div class="scene-emoji" style="margin-top:8px">${emoji}</div>` : ''}
       ${eyebrow ? `<p class="eyebrow${emoji ? ' center' : ''}">${esc(eyebrow)}</p>` : ''}
       <h2${c}>${esc(title)}</h2>
       ${sub ? `<p${c}>${esc(sub)}</p>` : ''}
       <div class="pick-grid">${cells}</div>
-      <button class="btn" id="confirm" disabled>${esc(cta)}</button>
+      <button class="btn${ctaEmoji ? ' has-emoji' : ''}" id="confirm" disabled>${ctaEmoji
+        ? `<span class="cta-side"><span class="emoji">${ctaEmoji}</span></span><span class="cta-label">${esc(cta)}</span><span class="cta-side"></span>`
+        : esc(cta)}</button>
       ${skipLabel ? `<button class="btn secondary" id="skip">${esc(skipLabel)}</button>` : ''}
       <div class="spacer"></div>
     `);
@@ -191,23 +205,19 @@
 
   // ---------- Setup ----------
   function setup() {
-    if (!G.setup) G.setup = { names: defaultNames(6), suspense: true, selfie: false, replicateToken: '' };
+    if (!G.setup) G.setup = { count: 6, suspense: true, selfie: false, replicateToken: '' };
     const s = G.setup;
-    const n = s.names.length;
+    const n = s.count;
     render(`
       <p class="eyebrow">New game · one shared phone</p>
-      <h2>Who’s playing?</h2>
-      <p>Add 5–12 players, then pass this phone around the table.</p>
+      <h2>How many are playing?</h2>
+      <p>Pick the number of players. Each one types their name when the phone reaches them.</p>
       <div class="stepper">
         <button class="step-btn" id="minus" ${n <= 3 ? 'disabled' : ''}>−</button>
         <span class="step-count">${n} players</span>
         <button class="step-btn" id="plus" ${n >= 12 ? 'disabled' : ''}>+</button>
       </div>
       ${n < 5 ? `<p class="center warn">⚠ Fewer than 5 players is for quick testing — the game won’t be much fun.</p>` : ''}
-      <div class="name-list">
-        ${s.names.map((nm, i) =>
-          `<input class="name-input" data-i="${i}" value="${esc(nm)}" placeholder="Player ${i + 1}" maxlength="14" aria-label="Player ${i + 1} name" name="player-${i}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" />`).join('')}
-      </div>
       <label class="option">
         <input type="checkbox" id="suspense" ${s.suspense ? 'checked' : ''} />
         <span class="option-box"></span>
@@ -233,11 +243,8 @@
       <button class="btn" id="deal">Deal roles</button>
     `, { targetSelector: '#deal' });
 
-    app.querySelector('#minus').onclick = () => { if (s.names.length > 3) { s.names.pop(); setup(); } };
-    app.querySelector('#plus').onclick = () => { if (s.names.length < 12) { s.names.push(''); setup(); } };
-    app.querySelectorAll('.name-input').forEach((inp) => {
-      inp.oninput = (e) => { s.names[+e.target.dataset.i] = e.target.value; };
-    });
+    app.querySelector('#minus').onclick = () => { if (s.count > 3) { s.count--; setup(); } };
+    app.querySelector('#plus').onclick = () => { if (s.count < 12) { s.count++; setup(); } };
     app.querySelector('#suspense').onchange = (e) => { s.suspense = e.target.checked; };
     app.querySelector('#selfie').onchange = (e) => {
       s.selfie = e.target.checked;
@@ -247,8 +254,10 @@
     const tok = app.querySelector('#rep-token');
     if (tok) tok.oninput = (e) => { s.replicateToken = e.target.value; };
     app.querySelector('#deal').onclick = () => {
-      const names = s.names.map((nm, i) => (nm.trim() || `Player ${i + 1}`));
-      G.players = Engine.dealRoles(names);
+      // Players are dealt with placeholder seat names; each one renames themselves
+      // when the phone reaches them on the first pass (see nameStep / reveal).
+      G.players = Engine.dealRoles(defaultNames(s.count));
+      G.players.forEach((p) => { p.named = false; });
       G.settings = { suspense: s.suspense, selfie: s.selfie, replicateToken: s.replicateToken.trim() };
       G.round = 0;
       reveal(0);
@@ -258,9 +267,50 @@
   // ---------- Secret role reveal (pass & play) ----------
   function reveal(i) {
     if (i >= G.players.length) { G.round = 1; return roundIntro(); }
-    const name = G.players[i].name;
-    // With selfie avatars on, the player snaps their token before seeing their role.
-    gate(name, () => (G.settings.selfie ? captureSelfie(name, () => revealCard(i)) : revealCard(i)));
+    const p = G.players[i];
+    // First pass: the player hasn't named themselves yet, so the gate refers to the
+    // seat ("the next player") rather than a name. They type their name, then (if
+    // selfies are on) snap a token, then see their role.
+    gate(p.name, () => nameStep(i), {
+      sub: 'Hand it over before tapping — then type your name.',
+      btn: 'I’ve got it',
+    });
+  }
+
+  // Each player types their own name when the phone reaches them. The typed name
+  // replaces the seat placeholder everywhere (state is keyed by name), so it must be
+  // non-empty and unique — we fall back to / disambiguate against the seat label.
+  function nameStep(i) {
+    const p = G.players[i];
+    render(`
+      <p class="eyebrow center" style="margin-top:6px">Player ${i + 1} of ${G.players.length}</p>
+      <h2 class="center">What’s your name?</h2>
+      <p class="center">This is just for you — keep your role secret.</p>
+      <div class="spacer"></div>
+      <input class="name-input" id="myname" placeholder="Your name" maxlength="14"
+        aria-label="Your name" autocomplete="off" autocorrect="off" autocapitalize="words"
+        spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" />
+      <div class="spacer"></div>
+      <button class="btn" id="go" disabled>Continue</button>
+    `, { targetSelector: '#myname' });
+
+    const input = app.querySelector('#myname');
+    const go = app.querySelector('#go');
+    const taken = (nm) => G.players.some((x, k) => k !== i && x.name.toLowerCase() === nm.toLowerCase());
+    const refresh = () => { go.disabled = !input.value.trim() || taken(input.value.trim()); };
+    input.oninput = refresh;
+    input.focus();
+    go.onclick = () => {
+      let nm = input.value.trim();
+      if (!nm || taken(nm)) return;
+      // Keep lastHolder pointing at this player after the rename (the gate set it to
+      // the seat placeholder), so the round's pass resumes from the right seat.
+      if (G.lastHolder === p.name) G.lastHolder = nm;
+      p.name = nm;
+      p.named = true;
+      // With selfie avatars on, the player snaps their token before seeing their role.
+      G.settings.selfie ? captureSelfie(nm, () => revealCard(i)) : revealCard(i);
+    };
   }
 
   // ---------- Selfie avatars (optional; photos stay in memory only) ----------
@@ -483,35 +533,52 @@
     gate(G.order[i].name, () => actFor(i));
   }
 
-  // The current player's private turn: role action (if any), then their vote.
+  // The current player's private turn. Everyone votes first; the Assassin and
+  // Guardian then take their secret action (a 2-step "Vote › Special" hint shows
+  // this progression up top). Plain Virtuous players just vote.
   function actFor(i) {
+    const p = G.order[i];
+    // The label for this role's special step, or null if they have none.
+    const specialLabel = p.role === 'assassin' ? 'Assassinate'
+      : p.role === 'guardian' ? 'Protect' : null;
+    const steps = specialLabel ? { labels: ['Vote', specialLabel], active: 0 } : null;
+    // After voting: special roles do their action (step 2), others move on.
+    const afterVote = specialLabel ? () => specialStep(i) : () => turn(i + 1);
+    voteStep(i, afterVote, steps);
+  }
+
+  // The Assassin's strike or the Guardian's shield — taken after this player votes.
+  function specialStep(i) {
     const p = G.order[i];
     if (p.role === 'assassin') {
       const targets = G.players.filter((x) => x.alive && x.role !== 'assassin').map((x) => x.name);
       chooseScene({
+        steps: { labels: ['Vote', 'Assassinate'], active: 1 },
         emoji: '🗡️', eyebrow: `Round ${G.round} · ASSASSINATE`, title: 'Mark your victim',
-        sub: 'Strike down one of the Virtuous tonight.', list: targets, cta: 'Assassinate',
-        onPick: (name) => { G.kills.push({ by: p.name, target: name }); voteStep(i); },
-      });
-    } else if (p.role === 'guardian') {
-      const targets = alivePlayers().filter((x) => x.name !== p.name).map((x) => x.name);
-      chooseScene({
-        emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect',
-        sub: 'They survive any assassination this round.', list: targets, cta: 'Protect',
-        onPick: (name) => { G.protects.push({ by: p.name, target: name }); voteStep(i); },
+        sub: 'Strike down one of the Virtuous tonight.', list: targets, cta: 'Assassinate', ctaEmoji: '🗡️',
+        onPick: (name) => { G.kills.push({ by: p.name, target: name }); turn(i + 1); },
       });
     } else {
-      voteStep(i);
+      const targets = alivePlayers().filter((x) => x.name !== p.name).map((x) => x.name);
+      chooseScene({
+        steps: { labels: ['Vote', 'Protect'], active: 1 },
+        emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect',
+        sub: 'They survive any assassination this round.', list: targets, cta: 'Protect', ctaEmoji: '🛡️',
+        onPick: (name) => { G.protects.push({ by: p.name, target: name }); turn(i + 1); },
+      });
     }
   }
 
-  function voteStep(i, next = turn) {
+  // The vote screen. `next(i+1)` advances; for special roles it instead chains into
+  // their action step. `steps` shows the 2-step hint (omitted for plain Virtuous).
+  function voteStep(i, next = (j) => turn(j), steps = null) {
     const p = G.order[i];
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
+      steps,
       emoji: '🗳️', eyebrow: `Round ${G.round}${G.revoted ? ' · RE-VOTE' : ''} · VOTE`,
       title: `${p.name}, who do you vote to banish?`,
-      sub: 'You only cast a vote — whoever the majority picks is banished.', list: options, cta: 'Cast vote',
+      sub: 'You only cast a vote — whoever the majority picks is banished.', list: options, cta: 'Cast vote', ctaEmoji: '🗳️',
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); next(i + 1); },
     });
   }
