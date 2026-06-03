@@ -26,7 +26,7 @@
   const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.hamuyrodrigo.workers.dev';
   // FLUX.1 Kontext: instruction-based image editing that keeps the person's likeness.
   // Replicate runs it on its own GPUs and auto-deletes inputs/outputs within ~1 hour.
-  const PORTRAIT_MODEL = 'black-forest-labs/flux-kontext-pro';
+  const PORTRAIT_MODEL = 'black-forest-labs/flux-kontext-max';
 
   // Each player gets a randomly assigned 16th-century character so portraits look
   // distinct at a glance — different role, dress, setting and palette per person.
@@ -57,12 +57,18 @@
   }
 
   function portraitPrompt(index) {
-    return 'Repaint this person as a 16th-century Renaissance oil portrait of ' +
+    // Kontext weights the START of the prompt most heavily and treats the named
+    // edit as the thing to change. So we lead with "keep this exact face", frame
+    // the change as *only* costume + background, and keep the painterly styling
+    // light — heavy "repaint/brushstrokes/craquelure" language makes it re-render
+    // the face from scratch and lose the person's likeness.
+    return 'Keep this exact person — same face, same facial features, same skin tone, ' +
+      'same hair, same age, same expression and head angle. Do not change the face. ' +
+      'Only change their clothing and the background: dress them as ' +
       characterFor(index) + '. ' +
-      'Tight head-and-shoulders close-up: the face fills most of the frame, cropped just ' +
-      'below the shoulders. Aged varnished canvas, dramatic chiaroscuro lighting, visible ' +
-      'brushstrokes and fine craquelure, in the style of an old master. ' +
-      'Keep the same face and identity — only the clothing, role and background change.';
+      'Frame as a head-and-shoulders portrait. Give it the soft, warm lighting and ' +
+      'muted colour of a 16th-century Renaissance oil painting, but keep the face ' +
+      'sharp and photo-accurate.';
   }
 
   const ROLE_INFO = {
@@ -241,7 +247,10 @@
   // ---------- Selfie avatars (optional; photos stay in memory only) ----------
   // Crop the live camera frame to a centred square and mirror it like a real selfie.
   function grabSquare(video) {
-    const size = 240;
+    // Capture large + high-quality: Kontext preserves likeness far better with
+    // more face pixels to anchor to, so we keep a 768px square at q0.92. The token
+    // is displayed small, but the full-res copy is what gets sent for enhancement.
+    const size = 768;
     const c = document.createElement('canvas');
     c.width = size; c.height = size;
     const ctx = c.getContext('2d');
@@ -249,7 +258,7 @@
     const s = Math.min(vw, vh);
     ctx.translate(size, 0); ctx.scale(-1, 1);
     ctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, size, size);
-    return c.toDataURL('image/jpeg', 0.8);
+    return c.toDataURL('image/jpeg', 0.92);
   }
 
   function captureSelfie(name, then) {
@@ -271,7 +280,8 @@
     let stream = null;
     const stop = () => { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } };
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false })
       .then((s) => { stream = s; video.srcObject = s; snap.disabled = false; snap.classList.add('target'); })
       .catch(() => { const n = app.querySelector('#camnote'); if (n) n.hidden = false; });
 
@@ -435,9 +445,10 @@
         onPick: (name) => { G.kills.push({ by: p.name, target: name }); voteStep(i); },
       });
     } else if (p.role === 'guardian') {
+      const targets = alivePlayers().filter((x) => x.name !== p.name).map((x) => x.name);
       chooseScene({
         emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect',
-        sub: 'They survive any assassination this round.', list: aliveNames(), cta: 'Protect',
+        sub: 'They survive any assassination this round.', list: targets, cta: 'Protect',
         onPick: (name) => { G.protects.push({ by: p.name, target: name }); voteStep(i); },
       });
     } else {
@@ -518,7 +529,7 @@
           </div>
         </div>
       </div>
-      <button class="btn" id="next" disabled>${last ? 'See the verdict' : 'Hide &amp; pass on'}</button>
+      <button class="btn" id="next" disabled>${last ? 'See the verdict' : 'Show everyone, then pass on'}</button>
     `, { targetSelector: '#flip' });
     const flip = app.querySelector('#flip');
     const next = app.querySelector('#next');
