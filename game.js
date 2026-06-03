@@ -23,7 +23,7 @@
   // The browser can't call api.replicate.com directly (no CORS), so requests go through
   // a tiny stateless proxy that just forwards the player's token. Deploy your own and
   // point this at it — see worker/README.md. The proxy stores no secrets.
-  const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.YOUR-SUBDOMAIN.workers.dev';
+  const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.hamuyrodrigo.workers.dev';
   // FLUX.1 Kontext: instruction-based image editing that keeps the person's likeness.
   // Replicate runs it on its own GPUs and auto-deletes inputs/outputs within ~1 hour.
   const PORTRAIT_MODEL = 'black-forest-labs/flux-kontext-pro';

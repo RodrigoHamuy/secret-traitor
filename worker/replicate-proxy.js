@@ -13,26 +13,21 @@
  * game.js to the resulting *.workers.dev URL.
  */
 
-// Lock this down to your own page so the Worker isn't an open relay for any site.
-const ALLOWED_ORIGINS = [
-  'https://rodrigohamuy.github.io',
-  'http://localhost:8000', // local dev (python -m http.server)
-];
-
-function corsHeaders(origin) {
-  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+// Open CORS: any origin may call this Worker. That's acceptable here because the
+// Worker holds no secrets of its own — every request must carry the *caller's* own
+// Replicate token, so an open policy just means "anyone with their own token can use
+// it." If abuse/request volume ever matters, swap this back to an allowlist.
+function corsHeaders() {
   return {
-    'Access-Control-Allow-Origin': allow,
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Vary': 'Origin',
   };
 }
 
 export default {
   async fetch(request) {
-    const origin = request.headers.get('Origin') || '';
-    const cors = corsHeaders(origin);
+    const cors = corsHeaders();
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: cors });

@@ -51,9 +51,12 @@ After the first run, the workflow log prints the deployed URL
 
 ### After deploying (either option)
 
-1. Put the printed URL in [`game.js`](../game.js) as `PORTRAIT_PROXY_URL`.
-2. Lock down origins: edit `ALLOWED_ORIGINS` in [`replicate-proxy.js`](./replicate-proxy.js)
-   to your GitHub Pages origin (and `http://localhost:PORT` for local testing), then redeploy.
+Put the printed URL in [`game.js`](../game.js) as `PORTRAIT_PROXY_URL`.
+
+> **CORS is open (`*`).** Any origin may call the Worker. That's fine because it holds no
+> secrets — every request must carry the caller's *own* Replicate token, so an open policy
+> just means "anyone with their own token can use it." If request volume ever becomes a
+> concern, restrict it with an origin allowlist in [`replicate-proxy.js`](./replicate-proxy.js).
 
 ## How a player uses it
 
