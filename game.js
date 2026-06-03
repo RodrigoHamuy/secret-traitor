@@ -109,10 +109,11 @@
       <h2>Who’s playing?</h2>
       <p>Add 5–12 players, then pass this phone around the table.</p>
       <div class="stepper">
-        <button class="step-btn" id="minus" ${n <= 5 ? 'disabled' : ''}>−</button>
+        <button class="step-btn" id="minus" ${n <= 3 ? 'disabled' : ''}>−</button>
         <span class="step-count">${n} players</span>
         <button class="step-btn" id="plus" ${n >= 12 ? 'disabled' : ''}>+</button>
       </div>
+      ${n < 5 ? `<p class="center warn">⚠ Fewer than 5 players is for quick testing — the game won’t be much fun.</p>` : ''}
       <div class="name-list">
         ${s.names.map((nm, i) =>
           `<input class="name-input" data-i="${i}" value="${esc(nm)}" maxlength="14" aria-label="Player ${i + 1} name" />`).join('')}
@@ -133,7 +134,7 @@
       <button class="btn" id="deal">Deal roles</button>
     `, { targetSelector: '#deal' });
 
-    app.querySelector('#minus').onclick = () => { if (s.names.length > 5) { s.names.pop(); setup(); } };
+    app.querySelector('#minus').onclick = () => { if (s.names.length > 3) { s.names.pop(); setup(); } };
     app.querySelector('#plus').onclick = () => { if (s.names.length < 12) { s.names.push(`Player ${s.names.length + 1}`); setup(); } };
     app.querySelectorAll('.name-input').forEach((inp) => {
       inp.oninput = (e) => { s.names[+e.target.dataset.i] = e.target.value; };

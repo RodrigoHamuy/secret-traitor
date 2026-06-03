@@ -94,6 +94,7 @@ h2 {
 }
 p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .center { text-align: center; }
+.warn { color: #e0a25a; font-size: 14px; margin-top: -4px; }
 .spacer { flex: 1; }
 .divider { color: var(--gold); text-align: center; font-size: 18px; letter-spacing: .6em;
            margin: 4px 0 16px; opacity: .85; }
