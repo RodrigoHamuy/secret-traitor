@@ -144,6 +144,16 @@
   const DEBATE_SECONDS = 60;
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
+  // Round 1 has no deaths to reason about, so nudge the table with a playful tell.
+  const ROUND1_TEASERS = [
+    'No clues yet — but did someone’s smile linger a beat too long when they saw their role?',
+    'Pure instinct this round. Did anyone giggle, or glance away a little too quickly?',
+    'No evidence, only vibes. Who seemed a touch too pleased with their card?',
+    'Did a poker face slip? A nervous laugh, a sharp little intake of breath?',
+    'Nobody’s died yet. So… who already looks guilty?',
+  ];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
   // Soft two-note bell when the debate timer runs out. Synthesised via Web Audio so
   // there's no asset to ship; silently no-ops if audio is unavailable or blocked.
   let _audioCtx;
@@ -544,7 +554,7 @@
     render(`
       <div class="spacer"></div>
       <h2 class="center">Round ${G.round}</h2>
-      <p class="center">Debate aloud — who do you suspect?</p>
+      <p class="center">${G.round === 1 ? pick(ROUND1_TEASERS) : 'Debate aloud — who do you suspect?'}</p>
       <div class="hourglass" style="--dur:${DEBATE_SECONDS}s">
         <span class="cap"></span>
         <span class="bulb top"><span class="sand"></span></span>
