@@ -104,6 +104,14 @@ at once**.
   result is tallied — a tense, dramatic ritual. Great in the same room or on a call.
 - *Off:* votes resolve instantly for a faster game.
 
+**🤳 Selfie avatars.** Whether each player's token is a **selfie** or **their initials**.
+- *On:* when the phone reaches a player for their secret role, they snap a selfie that
+  becomes their avatar everywhere (votes, eliminations, the final reveal).
+- **Privacy:** photos are **never saved or uploaded** — they live only in memory for this
+  one game session, on this device, and are gone when the game ends. Each capture screen
+  says so, and a "Skip — use initials" option is always offered (and is the automatic
+  fallback if the camera is unavailable or permission is denied).
+
 These combine naturally: with suspense on, "one phone only" means literally handing the
 phone to each player in turn to reveal; on separate devices, each player reveals on their
 own screen and the results arrive one by one.

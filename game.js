@@ -40,6 +40,8 @@
   const gInitials = (name) => name.trim().slice(0, 2).toUpperCase() || '??';
   function gAvatar(name) {
     const i = G.players.findIndex((p) => p.name === name);
+    const p = i >= 0 ? G.players[i] : null;
+    if (p && p.photo) return `<span class="avatar"><img class="avatar-img" src="${p.photo}" alt=""></span>`;
     return `<span class="avatar" style="background:${gColor(i < 0 ? 0 : i)}">${esc(gInitials(name))}</span>`;
   }
   const roleColor = (r) => r === 'assassin' ? 'var(--red)' : r === 'guardian' ? '#86a6d0' : 'var(--green)';
@@ -99,7 +101,7 @@
 
   // ---------- Setup ----------
   function setup() {
-    if (!G.setup) G.setup = { names: defaultNames(6), suspense: true };
+    if (!G.setup) G.setup = { names: defaultNames(6), suspense: true, selfie: false };
     const s = G.setup;
     const n = s.names.length;
     render(`
@@ -121,6 +123,12 @@
         <span class="option-text"><strong>Suspense mode</strong>
           <span class="option-sub">Reveal the votes one by one before the verdict.</span></span>
       </label>
+      <label class="option">
+        <input type="checkbox" id="selfie" ${s.selfie ? 'checked' : ''} />
+        <span class="option-box"></span>
+        <span class="option-text"><strong>Selfie avatars</strong>
+          <span class="option-sub">Each player snaps a selfie as their token. Nothing is saved — photos live only in this game, on this phone.</span></span>
+      </label>
       <div class="spacer"></div>
       <button class="btn" id="deal">Deal roles</button>
     `, { targetSelector: '#deal' });
@@ -131,10 +139,11 @@
       inp.oninput = (e) => { s.names[+e.target.dataset.i] = e.target.value; };
     });
     app.querySelector('#suspense').onchange = (e) => { s.suspense = e.target.checked; };
+    app.querySelector('#selfie').onchange = (e) => { s.selfie = e.target.checked; };
     app.querySelector('#deal').onclick = () => {
       const names = s.names.map((nm, i) => (nm.trim() || `Player ${i + 1}`));
       G.players = Engine.dealRoles(names);
-      G.settings = { suspense: s.suspense };
+      G.settings = { suspense: s.suspense, selfie: s.selfie };
       G.round = 0;
       reveal(0);
     };
@@ -143,7 +152,62 @@
   // ---------- Secret role reveal (pass & play) ----------
   function reveal(i) {
     if (i >= G.players.length) { G.round = 1; return roundIntro(); }
-    gate(G.players[i].name, () => revealCard(i));
+    const name = G.players[i].name;
+    // With selfie avatars on, the player snaps their token before seeing their role.
+    gate(name, () => (G.settings.selfie ? captureSelfie(name, () => revealCard(i)) : revealCard(i)));
+  }
+
+  // ---------- Selfie avatars (optional; photos stay in memory only) ----------
+  // Crop the live camera frame to a centred square and mirror it like a real selfie.
+  function grabSquare(video) {
+    const size = 240;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d');
+    const vw = video.videoWidth || size, vh = video.videoHeight || size;
+    const s = Math.min(vw, vh);
+    ctx.translate(size, 0); ctx.scale(-1, 1);
+    ctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, size, size);
+    return c.toDataURL('image/jpeg', 0.8);
+  }
+
+  function captureSelfie(name, then) {
+    // No camera available -> quietly fall back to an initials token.
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return then();
+    render(`
+      <p class="eyebrow center" style="margin-top:6px">Selfie · ${esc(name)}</p>
+      <h2 class="center">${esc(name)}, take a selfie</h2>
+      <p class="center">This becomes your token for the game. <strong>Nothing is saved</strong> — your photo
+        lives only in this game, on this phone, and is gone the moment it ends.</p>
+      <div class="selfie-stage"><video id="cam" autoplay playsinline muted></video></div>
+      <p class="center" id="camnote" hidden>Couldn’t open the camera — you can play with an initials token instead.</p>
+      <button class="btn" id="snap" disabled>Take photo</button>
+      <button class="btn secondary" id="skip">Skip — use initials</button>
+    `, { targetSelector: '#snap' });
+
+    const video = app.querySelector('#cam');
+    const snap = app.querySelector('#snap');
+    let stream = null;
+    const stop = () => { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } };
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .then((s) => { stream = s; video.srcObject = s; snap.disabled = false; snap.classList.add('target'); })
+      .catch(() => { const n = app.querySelector('#camnote'); if (n) n.hidden = false; });
+
+    snap.onclick = () => { if (!stream) return; const photo = grabSquare(video); stop(); confirmSelfie(name, photo, then); };
+    app.querySelector('#skip').onclick = () => { stop(); then(); };
+  }
+
+  function confirmSelfie(name, photo, then) {
+    render(`
+      <p class="eyebrow center" style="margin-top:6px">Selfie · ${esc(name)}</p>
+      <h2 class="center">Use this photo?</h2>
+      <div class="selfie-stage"><img class="selfie-preview" src="${photo}" alt=""></div>
+      <button class="btn" id="use">Looks good</button>
+      <button class="btn secondary" id="retake">Retake</button>
+    `, { targetSelector: '#use' });
+    app.querySelector('#use').onclick = () => { const p = G.players.find((x) => x.name === name); if (p) p.photo = photo; then(); };
+    app.querySelector('#retake').onclick = () => captureSelfie(name, then);
   }
 
   function revealCard(i) {
@@ -366,9 +430,9 @@
 
   function win(team) {
     const v = team === 'virtuous';
-    const roster = G.players.map((p, i) => `
+    const roster = G.players.map((p) => `
       <div class="seat">
-        <span class="avatar" style="background:${gColor(i)}">${esc(gInitials(p.name))}</span>
+        ${gAvatar(p.name)}
         <span class="name">${esc(p.name)}</span>
         <span class="role-tag" style="color:${roleColor(p.role)}">${ROLE_INFO[p.role].label}</span>
       </div>`).join('');
