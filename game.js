@@ -877,10 +877,13 @@
 
   function win(team) {
     const v = team === 'virtuous';
+    // The winning team: everyone who isn't an Assassin if the Virtuous won, else the Assassins.
+    const isWinner = (p) => (v ? p.role !== 'assassin' : p.role === 'assassin');
     const roster = G.players.map((p) => `
-      <div class="seat">
+      <div class="seat${isWinner(p) ? ' winner' : ''}">
         ${gAvatar(p.name)}
         <span class="name">${esc(p.name)}</span>
+        ${isWinner(p) ? '<span class="crown">👑</span>' : ''}
         <span class="role-tag" style="color:${roleColor(p.role)}">${ROLE_INFO[p.role].label}</span>
       </div>`).join('');
     render(`

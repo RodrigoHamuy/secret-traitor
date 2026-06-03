@@ -204,6 +204,15 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .seat .name { font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 14px; letter-spacing: .02em; }
 .seat.you { border-color: var(--gold); }
 .seat.you .name { color: var(--gold-bright); }
+/* Winning team highlighted on the final roster */
+.seat.winner {
+  border-color: var(--gold-bright);
+  background: linear-gradient(180deg, rgba(232,200,115,.16), rgba(232,200,115,.05));
+  box-shadow: inset 0 0 0 1px rgba(232,200,115,.55), 0 0 18px rgba(232,200,115,.22);
+}
+.seat.winner .name { color: var(--gold-bright); }
+.seat .crown { font-family: var(--emoji-font); font-size: 14px; margin-left: 6px;
+  filter: drop-shadow(0 0 4px rgba(232,200,115,.7)); }
 
 /* Avatars — gold-rimmed medallions */
 .avatar {
