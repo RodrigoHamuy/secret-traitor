@@ -199,7 +199,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 
 /* Optional Replicate token field, revealed under the Selfie avatars toggle. */
 .token-field { margin: 2px 0 4px; }
-.token-input { width: 100%; box-sizing: border-box; }
+.token-input { width: 100%; box-sizing: border-box; -webkit-text-security: disc; }
 .token-note { margin: 6px 2px 0; font-size: 12px; line-height: 1.45; color: var(--muted, #9a8c74); }
 
 /* Selfie capture */
@@ -215,7 +215,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 8px; }
 .pick {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
-  padding: 18px 8px; border-radius: 10px; cursor: pointer;
+  padding: 10px 10px 14px; border-radius: 10px; cursor: pointer;
   background: linear-gradient(180deg, var(--parch), var(--parch-2));
   border: 1px solid #7a5d28; color: var(--ink);
   font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 14px;
@@ -228,7 +228,10 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   box-shadow: inset 0 0 0 2px var(--gold-bright), 0 4px 16px rgba(201,162,74,.45);
 }
 .pick.selected .name { color: #5a3210; }
-.pick .avatar { width: 48px; height: 48px; font-size: 18px; }
+.pick .avatar {
+  width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 8px;
+  font-size: 40px;
+}
 .pick.dead { opacity: .4; pointer-events: none; filter: grayscale(.5); }
 .pick.dead .name::after { content: " †"; }
 

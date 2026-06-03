@@ -1,0 +1,7 @@
+{
+  "name": "secret-traitor",
+  "private": true,
+  "scripts": {
+    "dev": "pnpx serve ."
+  }
+}

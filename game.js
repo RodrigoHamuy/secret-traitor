@@ -27,11 +27,43 @@
   // FLUX.1 Kontext: instruction-based image editing that keeps the person's likeness.
   // Replicate runs it on its own GPUs and auto-deletes inputs/outputs within ~1 hour.
   const PORTRAIT_MODEL = 'black-forest-labs/flux-kontext-pro';
-  const PORTRAIT_PROMPT =
-    'Repaint this person as a 16th-century Renaissance oil portrait in the style of an old ' +
-    'master: aged varnished canvas, dramatic chiaroscuro lighting, dark muted background, ' +
-    'period nobleman attire with a ruff collar, visible brushstrokes and craquelure. ' +
-    'Keep the same face, identity and pose.';
+
+  // Each player gets a randomly assigned 16th-century character so portraits look
+  // distinct at a glance — different role, dress, setting and palette per person.
+  // Each entry bundles attire + a fitting backdrop so the look stays coherent.
+  const PORTRAIT_CHARACTERS = [
+    'a stern judge in black judicial robes and a flat velvet cap, seated before dark oak panelling',
+    'a priest in a black cassock and white clerical collar, in a candlelit stone chapel',
+    'a humble villager in a coarse linen shirt and brown woollen cap, against a rustic plaster wall',
+    'a noblewoman in a richly embroidered gown and pearl headdress, before a deep crimson drape',
+    'a merchant in a fur-trimmed coat and gold chain, in a wood-panelled counting house',
+    'a soldier in burnished steel armour and a red sash, against a stormy battlefield sky',
+    'a scholar in a dark scholar\'s robe holding spectacles, in a library of leather books',
+    'a physician in a long dark gown and skullcap, by shelves of glass apothecary jars',
+    'a court jester in a parti-coloured motley and belled hood, before a tapestry backdrop',
+    'a duke in ermine-trimmed crimson velvet and a jewelled medallion, in a gilded hall',
+    'a nun in a black-and-white habit and wimple, in a quiet cloister of pale stone',
+    'a blacksmith in a leather apron over a rough tunic, lit by the orange glow of a forge',
+    'a sea captain in a navy coat with brass buttons and a wide hat, against a harbour at dusk',
+    'a friar in a brown hooded habit with a rope belt, in a sunlit monastery garden',
+    'a magistrate in deep-green robes trimmed with gold braid, before a heavy green curtain',
+    'a young squire in a quilted doublet and feathered cap, against a pale grey-blue sky',
+  ];
+
+  // Deterministic pick per player index so re-renders stay stable and two adjacent
+  // players rarely collide (the offset spreads them across the list).
+  function characterFor(index) {
+    return PORTRAIT_CHARACTERS[((index * 7) % PORTRAIT_CHARACTERS.length + PORTRAIT_CHARACTERS.length) % PORTRAIT_CHARACTERS.length];
+  }
+
+  function portraitPrompt(index) {
+    return 'Repaint this person as a 16th-century Renaissance oil portrait of ' +
+      characterFor(index) + '. ' +
+      'Tight head-and-shoulders close-up: the face fills most of the frame, cropped just ' +
+      'below the shoulders. Aged varnished canvas, dramatic chiaroscuro lighting, visible ' +
+      'brushstrokes and fine craquelure, in the style of an old master. ' +
+      'Keep the same face and identity — only the clothing, role and background change.';
+  }
 
   const ROLE_INFO = {
     virtuous: { label: 'VIRTUOUS', cls: 'role-virtuous', glyph: '🍷',
@@ -150,7 +182,7 @@
       ${n < 5 ? `<p class="center warn">⚠ Fewer than 5 players is for quick testing — the game won’t be much fun.</p>` : ''}
       <div class="name-list">
         ${s.names.map((nm, i) =>
-          `<input class="name-input" data-i="${i}" value="${esc(nm)}" maxlength="14" aria-label="Player ${i + 1} name" />`).join('')}
+          `<input class="name-input" data-i="${i}" value="${esc(nm)}" maxlength="14" aria-label="Player ${i + 1} name" name="player-${i}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" />`).join('')}
       </div>
       <label class="option">
         <input type="checkbox" id="suspense" ${s.suspense ? 'checked' : ''} />
@@ -165,8 +197,9 @@
           <span class="option-sub">Each player snaps a selfie as their token. Nothing is saved — photos live only in this game, on this phone.</span></span>
       </label>
       <div class="token-field" id="token-field" ${s.selfie ? '' : 'hidden'}>
-        <input class="name-input token-input" id="rep-token" type="password" autocomplete="off"
-          spellcheck="false" placeholder="Replicate API token (optional)" value="${esc(s.replicateToken)}" />
+        <input class="name-input token-input" id="rep-token" type="text" name="rep-token" autocomplete="off"
+          autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true"
+          data-form-type="other" placeholder="Replicate API token (optional)" value="${esc(s.replicateToken)}" />
         <p class="token-note">Optional. Paints each selfie into a 16th-century portrait in the
           background. Your token stays on this phone (never saved) and Replicate auto-deletes the
           photos within an hour. Leave blank for plain selfies.</p>
@@ -275,6 +308,7 @@
     p.enhancing = true;
     markEnhancing(p.name, true);
     const selfie = p.photo; // capture now in case the player retakes later
+    const prompt = portraitPrompt(G.players.indexOf(p));
 
     // The proxy adds the Authorization header from `token` and forwards to Replicate's
     // official-model endpoint with `Prefer: wait`, so this resolves with the finished
@@ -285,7 +319,7 @@
       body: JSON.stringify({
         token,
         model: PORTRAIT_MODEL,
-        input: { prompt: PORTRAIT_PROMPT, input_image: selfie, output_format: 'jpg' },
+        input: { prompt, input_image: selfie, output_format: 'jpg' },
       }),
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
