@@ -343,6 +343,29 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .vr-name { max-width: 5.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vr-arrow { color: var(--muted); margin: 0 2px; }
 
+/* Debate hourglass (sand drains over --dur; the screen's button skips it) */
+.hourglass { position: relative; width: 78px; margin: 18px auto 8px;
+  display: flex; flex-direction: column; align-items: center; }
+.hourglass .cap { width: 78px; height: 7px; border-radius: 4px;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: 0 1px 0 #5e4720; }
+.hourglass .bulb { width: 64px; height: 46px; position: relative; overflow: hidden;
+  background: rgba(255,255,255,.05); }
+.hourglass .bulb.top    { clip-path: polygon(0 0, 100% 0, 50% 100%); }
+.hourglass .bulb.bottom { clip-path: polygon(50% 0, 0 100%, 100% 100%); }
+.hourglass .sand { position: absolute; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #e8c873, #c9a24a); }
+.hourglass .bulb.top .sand    { height: 100%; animation: hg-drain var(--dur,60s) linear forwards; }
+.hourglass .bulb.bottom .sand { height: 0;    animation: hg-fill  var(--dur,60s) linear forwards; }
+@keyframes hg-drain { from { height: 100%; } to { height: 0; } }
+@keyframes hg-fill  { from { height: 0; }    to { height: 100%; } }
+.hourglass::after { content: ""; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); width: 2px; height: 20px;
+  background: linear-gradient(#e8c873, rgba(232,200,115,0)); animation: hg-stream .6s linear infinite; }
+@keyframes hg-stream { 0%,100% { opacity: .25; } 50% { opacity: .9; } }
+.timer { font-family: 'Cinzel', Georgia, serif; font-size: 22px; letter-spacing: .12em;
+  color: var(--gold-bright); margin: 2px 0 8px; }
+.timer.up { color: var(--red); animation: pulse 1.2s ease-in-out infinite; }
+
 /* Role reveal card (flip) */
 .reveal { perspective: 1200px; margin: auto 0; }
 .flip { position: relative; width: 100%; aspect-ratio: 3/4; transform-style: preserve-3d;

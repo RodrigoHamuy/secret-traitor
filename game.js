@@ -140,6 +140,9 @@
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
+  // Debate countdown shown with the hourglass (seconds). Players can skip it any time.
+  const DEBATE_SECONDS = 60;
+  const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
   // screen only renders once the recipient confirms — nothing leaks while passing.
@@ -513,14 +516,37 @@
   function roundIntro() {
     render(`
       <div class="spacer"></div>
-      <div class="scene-emoji">🕯️</div>
       <h2 class="center">Round ${G.round}</h2>
-      <p class="center">Debate aloud. Then pass the phone around — on their turn, each player secretly acts and votes.</p>
+      <p class="center">Debate aloud — who do you suspect?</p>
+      <div class="hourglass" style="--dur:${DEBATE_SECONDS}s">
+        <span class="cap"></span>
+        <span class="bulb top"><span class="sand"></span></span>
+        <span class="bulb bottom"><span class="sand"></span></span>
+        <span class="cap"></span>
+      </div>
+      <p class="center timer" id="timer">${fmt(DEBATE_SECONDS)}</p>
       <p class="center"><span class="pill">${aliveNames().length} still alive</span></p>
       <div class="spacer"></div>
-      <button class="btn" id="next">Pass the phone around</button>
+      <button class="btn" id="next">Skip &amp; pass the phone around</button>
     `, { targetSelector: '#next' });
+
+    // Tick the debate clock down; it's purely ambient — the button always proceeds.
+    let left = DEBATE_SECONDS;
+    const tEl = app.querySelector('#timer');
+    const iv = setInterval(() => {
+      left -= 1;
+      if (left <= 0) {
+        clearInterval(iv);
+        if (tEl) { tEl.textContent = 'Time’s up'; tEl.classList.add('up'); }
+        const btn = app.querySelector('#next');
+        if (btn) { btn.textContent = 'Pass the phone around'; btn.classList.add('target'); }
+      } else if (tEl) {
+        tEl.textContent = fmt(left);
+      }
+    }, 1000);
+
     app.querySelector('#next').onclick = () => {
+      clearInterval(iv);
       // Resume beside whoever last held the phone (the player just revealed).
       G.order = aliveOrderFrom(G.lastHolder);
       G.kills = []; G.protects = []; G.votes = []; G.revoted = false;
