@@ -1,0 +1,6 @@
+name = "secret-traitor-replicate"
+main = "replicate-proxy.js"
+compatibility_date = "2024-11-01"
+
+# This Worker holds no secrets and stores no data. The player's Replicate token
+# arrives in each request body and is used only to forward that one call.

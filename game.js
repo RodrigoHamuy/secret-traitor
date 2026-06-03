@@ -19,6 +19,20 @@
   const COLORS = ['#e8c468', '#9fc06f', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a',
                   '#5ad2c0', '#d08fb0', '#b0c070', '#7fa6e0', '#e0a25a', '#90d0a0'];
 
+  // ----- Period-portrait enhancement (optional, bring-your-own Replicate token) -----
+  // The browser can't call api.replicate.com directly (no CORS), so requests go through
+  // a tiny stateless proxy that just forwards the player's token. Deploy your own and
+  // point this at it — see worker/README.md. The proxy stores no secrets.
+  const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.YOUR-SUBDOMAIN.workers.dev';
+  // FLUX.1 Kontext: instruction-based image editing that keeps the person's likeness.
+  // Replicate runs it on its own GPUs and auto-deletes inputs/outputs within ~1 hour.
+  const PORTRAIT_MODEL = 'black-forest-labs/flux-kontext-pro';
+  const PORTRAIT_PROMPT =
+    'Repaint this person as a 16th-century Renaissance oil portrait in the style of an old ' +
+    'master: aged varnished canvas, dramatic chiaroscuro lighting, dark muted background, ' +
+    'period nobleman attire with a ruff collar, visible brushstrokes and craquelure. ' +
+    'Keep the same face, identity and pose.';
+
   const ROLE_INFO = {
     virtuous: { label: 'VIRTUOUS', cls: 'role-virtuous', glyph: '🍷',
       desc: 'You are innocent. Each round, vote to banish the Assassins before they outnumber you.' },
@@ -41,8 +55,12 @@
   function gAvatar(name) {
     const i = G.players.findIndex((p) => p.name === name);
     const p = i >= 0 ? G.players[i] : null;
-    if (p && p.photo) return `<span class="avatar"><img class="avatar-img" src="${p.photo}" alt=""></span>`;
-    return `<span class="avatar" style="background:${gColor(i < 0 ? 0 : i)}">${esc(gInitials(name))}</span>`;
+    if (p && p.photo) {
+      // data-player + .enhancing let the background portrait swap in live (see swapAvatar).
+      const cls = p.enhancing ? 'avatar enhancing' : 'avatar';
+      return `<span class="${cls}" data-player="${i}"><img class="avatar-img" src="${p.photo}" alt=""></span>`;
+    }
+    return `<span class="avatar" data-player="${i}" style="background:${gColor(i < 0 ? 0 : i)}">${esc(gInitials(name))}</span>`;
   }
   const roleColor = (r) => r === 'assassin' ? 'var(--red)' : r === 'guardian' ? '#86a6d0' : 'var(--green)';
   function roleWord(r) {
@@ -117,7 +135,7 @@
 
   // ---------- Setup ----------
   function setup() {
-    if (!G.setup) G.setup = { names: defaultNames(6), suspense: true, selfie: false };
+    if (!G.setup) G.setup = { names: defaultNames(6), suspense: true, selfie: false, replicateToken: '' };
     const s = G.setup;
     const n = s.names.length;
     render(`
@@ -146,6 +164,13 @@
         <span class="option-text"><strong>Selfie avatars</strong>
           <span class="option-sub">Each player snaps a selfie as their token. Nothing is saved — photos live only in this game, on this phone.</span></span>
       </label>
+      <div class="token-field" id="token-field" ${s.selfie ? '' : 'hidden'}>
+        <input class="name-input token-input" id="rep-token" type="password" autocomplete="off"
+          spellcheck="false" placeholder="Replicate API token (optional)" value="${esc(s.replicateToken)}" />
+        <p class="token-note">Optional. Paints each selfie into a 16th-century portrait in the
+          background. Your token stays on this phone (never saved) and Replicate auto-deletes the
+          photos within an hour. Leave blank for plain selfies.</p>
+      </div>
       <div class="spacer"></div>
       <button class="btn" id="deal">Deal roles</button>
     `, { targetSelector: '#deal' });
@@ -156,11 +181,17 @@
       inp.oninput = (e) => { s.names[+e.target.dataset.i] = e.target.value; };
     });
     app.querySelector('#suspense').onchange = (e) => { s.suspense = e.target.checked; };
-    app.querySelector('#selfie').onchange = (e) => { s.selfie = e.target.checked; };
+    app.querySelector('#selfie').onchange = (e) => {
+      s.selfie = e.target.checked;
+      const tf = app.querySelector('#token-field');
+      if (tf) tf.hidden = !s.selfie;
+    };
+    const tok = app.querySelector('#rep-token');
+    if (tok) tok.oninput = (e) => { s.replicateToken = e.target.value; };
     app.querySelector('#deal').onclick = () => {
       const names = s.names.map((nm, i) => (nm.trim() || `Player ${i + 1}`));
       G.players = Engine.dealRoles(names);
-      G.settings = { suspense: s.suspense, selfie: s.selfie };
+      G.settings = { suspense: s.suspense, selfie: s.selfie, replicateToken: s.replicateToken.trim() };
       G.round = 0;
       reveal(0);
     };
@@ -223,8 +254,84 @@
       <button class="btn" id="use">Looks good</button>
       <button class="btn secondary" id="retake">Retake</button>
     `, { targetSelector: '#use' });
-    app.querySelector('#use').onclick = () => { const p = G.players.find((x) => x.name === name); if (p) p.photo = photo; then(); };
+    app.querySelector('#use').onclick = () => {
+      const p = G.players.find((x) => x.name === name);
+      if (p) { p.photo = photo; enhancePortrait(p); }
+      then();
+    };
     app.querySelector('#retake').onclick = () => captureSelfie(name, then);
+  }
+
+  // Fire-and-forget: if a Replicate token was given, paint the selfie into a period
+  // portrait in the background and swap it in when ready. The raw selfie is always the
+  // fallback — any failure, timeout, or missing token simply leaves it untouched.
+  function enhancePortrait(p) {
+    const token = G.settings.replicateToken;
+    if (!token || !p.photo) return;
+    if (PORTRAIT_PROXY_URL.includes('YOUR-SUBDOMAIN')) {
+      console.warn('Portrait enhancement skipped: PORTRAIT_PROXY_URL is not configured.');
+      return;
+    }
+    p.enhancing = true;
+    markEnhancing(p.name, true);
+    const selfie = p.photo; // capture now in case the player retakes later
+
+    // The proxy adds the Authorization header from `token` and forwards to Replicate's
+    // official-model endpoint with `Prefer: wait`, so this resolves with the finished
+    // prediction in one round-trip (it falls back to polling if the model runs long).
+    fetch(PORTRAIT_PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        token,
+        model: PORTRAIT_MODEL,
+        input: { prompt: PORTRAIT_PROMPT, input_image: selfie, output_format: 'jpg' },
+      }),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((pred) => {
+        const url = Array.isArray(pred.output) ? pred.output[0] : pred.output;
+        if (pred.status !== 'succeeded' || !url) {
+          return Promise.reject(new Error(pred.error || 'Enhancement did not succeed'));
+        }
+        return loadImage(url);
+      })
+      .then((dataUrl) => {
+        // Ignore if the player retook the photo while we were generating.
+        if (p.photo !== selfie) return;
+        p.photo = dataUrl;
+        swapAvatar(p.name, dataUrl);
+      })
+      .catch((err) => console.warn(`Portrait enhancement failed for ${p.name}:`, err))
+      .finally(() => { p.enhancing = false; markEnhancing(p.name, false); });
+  }
+
+  // Fetch the generated image and inline it as a data URL so the avatar keeps working
+  // even after Replicate's short-lived output URL expires.
+  function loadImage(url) {
+    return fetch(url)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error('image ' + r.status))))
+      .then((blob) => new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.onerror = () => reject(fr.error || new Error('read failed'));
+        fr.readAsDataURL(blob);
+      }));
+  }
+
+  // Live-patch any avatar <img> for this player on the current screen (later scenes
+  // pick up the new p.photo automatically on their next render()).
+  function swapAvatar(name, src) {
+    const i = G.players.findIndex((x) => x.name === name);
+    document.querySelectorAll(`.avatar[data-player="${i}"] .avatar-img`).forEach((img) => {
+      img.src = src;
+    });
+  }
+  function markEnhancing(name, on) {
+    const i = G.players.findIndex((x) => x.name === name);
+    document.querySelectorAll(`.avatar[data-player="${i}"]`).forEach((el) => {
+      el.classList.toggle('enhancing', on);
+    });
   }
 
   function revealCard(i) {

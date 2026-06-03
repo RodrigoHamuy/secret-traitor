@@ -1,0 +1,39 @@
+name: Deploy Replicate proxy Worker
+
+# Deploys the optional Cloudflare Worker in worker/ that proxies period-portrait
+# requests to Replicate (see worker/README.md). The Worker holds no secrets — the
+# Cloudflare credentials below are only used to publish it.
+#
+# Required GitHub repository secrets:
+#   CLOUDFLARE_API_TOKEN   — a Cloudflare API token with the "Edit Cloudflare Workers" permission.
+#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/secret-traitor-plan-bonbe
+    # Only redeploy when the Worker itself changes.
+    paths:
+      - 'worker/**'
+      - '.github/workflows/deploy-worker.yml'
+  workflow_dispatch:
+
+# One deploy at a time; newer pushes supersede in-progress ones.
+concurrency:
+  group: deploy-worker
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy with Wrangler
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
