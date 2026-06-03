@@ -144,6 +144,33 @@
   const DEBATE_SECONDS = 60;
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
+  // Soft two-note bell when the debate timer runs out. Synthesised via Web Audio so
+  // there's no asset to ship; silently no-ops if audio is unavailable or blocked.
+  let _audioCtx;
+  function playChime() {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      _audioCtx = _audioCtx || new AC();
+      const ctx = _audioCtx;
+      if (ctx.state === 'suspended') ctx.resume();
+      const now = ctx.currentTime;
+      [659.25, 987.77].forEach((freq, k) => { // E5 then B5 — a gentle rising chime
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = now + k * 0.18;
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.18, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + 1.7);
+      });
+    } catch (e) { /* audio unavailable — stay silent */ }
+  }
+
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
   // screen only renders once the recipient confirms — nothing leaks while passing.
   function gate(who, then, opts = {}) {
@@ -537,6 +564,7 @@
       left -= 1;
       if (left <= 0) {
         clearInterval(iv);
+        playChime();
         if (tEl) { tEl.textContent = 'Time’s up'; tEl.classList.add('up'); }
         const btn = app.querySelector('#next');
         if (btn) { btn.textContent = 'Pass the phone around'; btn.classList.add('target'); }
