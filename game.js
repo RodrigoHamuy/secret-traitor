@@ -293,7 +293,7 @@
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
       eyebrow: `Round ${G.round} · your vote`, title: `${p.name}, who do you banish?`,
-      sub: 'This vote is yours alone.', list: options, skipLabel: 'Abstain',
+      sub: 'You must vote — no abstaining.', list: options,
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); turn(i + 1); },
     });
   }
