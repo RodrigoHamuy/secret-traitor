@@ -1,7 +1,7 @@
 # Replicate proxy (optional)
 
 Secret Traitor's optional **period-portrait** feature paints each player's selfie into a
-16th-century oil portrait using [InstantID](https://replicate.com/zsxkib/instant-id) on
+16th-century oil portrait using [PuLID](https://replicate.com/bytedance/pulid) on
 Replicate. The game is a static site, but browsers can't call `api.replicate.com`
 directly — Replicate sends no CORS headers
 ([known limitation](https://github.com/replicate/replicate-javascript/issues/164)). This
@@ -32,7 +32,7 @@ header is passed through, so the client can use `Prefer: wait` for a one-shot re
   to forward that single call. No secrets are baked into the Worker.
 - **Replicate auto-deletes** all prediction inputs, outputs, and logs within ~1 hour by
   default ([data-retention docs](https://replicate.com/docs/topics/predictions/data-retention)).
-- InstantID runs on Replicate's own GPUs (not relayed to a third party), and Replicate
+- PuLID runs on Replicate's own GPUs (not relayed to a third party), and Replicate
   states it does not sell or share personal information ([privacy policy](https://replicate.com/privacy)).
 - The token lives only in memory on the player's phone — the app never saves it.
 

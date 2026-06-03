@@ -25,28 +25,24 @@
   // injects the player's token. Deploy your own and point this at it — see worker/README.md.
   // The proxy stores no secrets. This is the proxy ORIGIN; we append the API path below.
   const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.hamuyrodrigo.workers.dev';
-  // InstantID: identity-preserving generation. Unlike an image *editor* (Kontext),
-  // it extracts a face embedding from the selfie and LOCKS onto it while generating a
-  // fresh scene around it — so the costume/background can change freely without the
-  // face drifting. Replicate auto-deletes inputs/outputs within ~1 hour.
-  // InstantID is a *community* model, run by version id. We POST { version, input } to
+  // PuLID: identity-preserving generation. Like InstantID, it extracts a face
+  // embedding from the selfie and LOCKS onto it while generating a fresh scene around
+  // it — so the costume/background can change freely without the face drifting — but
+  // it's a single fast model that stays warm (no cold-start), unlike InstantID's heavy
+  // multi-model pipeline. Replicate auto-deletes inputs/outputs within ~1 hour.
+  // It's a *community* model, run by version id. We POST { version, input } to
   // /v1/predictions through the proxy. PORTRAIT_MODEL is just a human label for which
   // model PORTRAIT_VERSION pins; bump the version from the model's Replicate page.
-  const PORTRAIT_MODEL = 'zsxkib/instant-id'; // label only — requests use the version
-  const PORTRAIT_VERSION = '2e4785a4d80dadf580077b2244c8d7c05d8e3faac04a04c02d8e099dd2876789';
-  // The likeness dials (per Replicate's schema). Higher = closer to the real person,
-  // less "imagination"; lower = more painterly but drifts. Defaults are 0.8/0.8.
-  //   IDENTITY_FIDELITY -> controlnet_conditioning_scale ("IdentityNet strength, for
-  //     fidelity") — this is the main face-likeness lever. Push UP if faces look off.
-  //   FACE_DETAIL       -> ip_adapter_scale ("image adapter strength, for detail").
-  const IDENTITY_FIDELITY = 1.0;    // controlnet_conditioning_scale (likeness)
-  const FACE_DETAIL = 0.9;          // ip_adapter_scale (facial detail)
-  // Speed tweaks — InstantID is a heavy multi-model pipeline (face analysis + IdentityNet
-  // ControlNet + IP-Adapter + SDXL), so we trim everything that doesn't affect likeness:
-  //   - LCM sampling: ~6 denoising steps instead of 30 (the biggest win).
-  //   - Pose ControlNet off: we only want the identity, not the selfie's pose, so we drop
-  //     a whole conditioning network. (IdentityNet, the likeness one, stays on.)
-  const FAST_STEPS = 6;             // lcm_num_inference_steps (used when enable_lcm)
+  const PORTRAIT_MODEL = 'bytedance/pulid'; // label only — requests use the version
+  const PORTRAIT_VERSION = '43d309c37ab4e62361e5e29b8e9e867fb2dcbcec77ae91206a8d95ac5dd451a0';
+  // The likeness dial (per PuLID's schema). Higher = closer to the real person, less
+  // "imagination"; lower = more painterly but drifts. Default is 0.8 (max 5).
+  //   IDENTITY_FIDELITY -> identity_scale ("ID scale") — the main face-likeness lever.
+  //     Push UP if faces look off. Paired with generation_mode 'fidelity' below.
+  const IDENTITY_FIDELITY = 1.0;    // identity_scale (likeness)
+  // Speed: PuLID is fast by design. num_steps default is 4; cfg_scale near 1 is the
+  // fastest setting (range [1, 1.5]). We generate a single sample (num_samples: 1).
+  const FAST_STEPS = 4;             // num_steps
 
   // Each player gets a randomly assigned 16th-century character so portraits look
   // distinct at a glance — different role, dress, setting and palette per person.
@@ -76,7 +72,7 @@
     return PORTRAIT_CHARACTERS[((index * 7) % PORTRAIT_CHARACTERS.length + PORTRAIT_CHARACTERS.length) % PORTRAIT_CHARACTERS.length];
   }
 
-  // InstantID generates a fresh scene around the locked face, so the prompt is a
+  // PuLID generates a fresh scene around the locked face, so the prompt is a
   // positive *description* of the whole portrait (not an edit instruction). The face
   // itself comes from the embedding — we just describe the costume, framing and style.
   function portraitPrompt(index) {
@@ -109,15 +105,18 @@
     .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const gColor = (i) => COLORS[((i % COLORS.length) + COLORS.length) % COLORS.length];
   const gInitials = (name) => name.trim().slice(0, 2).toUpperCase() || '??';
+  // A dead player's avatar carries a fate class: banished -> greyed out, killed -> red tint.
+  const fateClass = (p) => !p || p.alive ? '' : p.fate === 'killed' ? ' slain' : ' banished';
   function gAvatar(name) {
     const i = G.players.findIndex((p) => p.name === name);
     const p = i >= 0 ? G.players[i] : null;
+    const fate = fateClass(p);
     if (p && p.photo) {
       // data-player + .enhancing let the background portrait swap in live (see swapAvatar).
-      const cls = p.enhancing ? 'avatar enhancing' : 'avatar';
+      const cls = (p.enhancing ? 'avatar enhancing' : 'avatar') + fate;
       return `<span class="${cls}" data-player="${i}"><img class="avatar-img" src="${p.photo}" alt=""></span>`;
     }
-    return `<span class="avatar" data-player="${i}" style="background:${gColor(i < 0 ? 0 : i)}">${esc(gInitials(name))}</span>`;
+    return `<span class="avatar${fate}" data-player="${i}" style="background:${gColor(i < 0 ? 0 : i)}">${esc(gInitials(name))}</span>`;
   }
   const roleColor = (r) => r === 'assassin' ? 'var(--red)' : r === 'guardian' ? '#86a6d0' : 'var(--green)';
   function roleWord(r) {
@@ -140,7 +139,7 @@
   }
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
-  const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
+  const defaultNames = (k) => Array.from({ length: k }, () => '');
 
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
   // screen only renders once the recipient confirms — nothing leaks while passing.
@@ -207,7 +206,7 @@
       ${n < 5 ? `<p class="center warn">⚠ Fewer than 5 players is for quick testing — the game won’t be much fun.</p>` : ''}
       <div class="name-list">
         ${s.names.map((nm, i) =>
-          `<input class="name-input" data-i="${i}" value="${esc(nm)}" maxlength="14" aria-label="Player ${i + 1} name" name="player-${i}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" />`).join('')}
+          `<input class="name-input" data-i="${i}" value="${esc(nm)}" placeholder="Player ${i + 1}" maxlength="14" aria-label="Player ${i + 1} name" name="player-${i}" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false" data-1p-ignore data-lpignore="true" data-form-type="other" />`).join('')}
       </div>
       <label class="option">
         <input type="checkbox" id="suspense" ${s.suspense ? 'checked' : ''} />
@@ -235,7 +234,7 @@
     `, { targetSelector: '#deal' });
 
     app.querySelector('#minus').onclick = () => { if (s.names.length > 3) { s.names.pop(); setup(); } };
-    app.querySelector('#plus').onclick = () => { if (s.names.length < 12) { s.names.push(`Player ${s.names.length + 1}`); setup(); } };
+    app.querySelector('#plus').onclick = () => { if (s.names.length < 12) { s.names.push(''); setup(); } };
     app.querySelectorAll('.name-input').forEach((inp) => {
       inp.oninput = (e) => { s.names[+e.target.dataset.i] = e.target.value; };
     });
@@ -288,9 +287,7 @@
       <p class="eyebrow center" style="margin-top:6px">Selfie · ${esc(name)}</p>
       <h2 class="center">${esc(name)}, take a selfie</h2>
       <p class="center">This becomes your token for the game. <strong>The app saves nothing</strong> — your photo
-        lives only in this game, on this phone, and is gone the moment it ends.${G.settings.replicateToken
-          ? ' To paint it into a portrait, it’s briefly sent to Replicate, then auto-deleted within an hour.'
-          : ''}</p>
+        lives only in this game, and is gone the moment it ends.</p>
       <div class="selfie-stage"><video id="cam" autoplay playsinline muted></video></div>
       <p class="center" id="camnote" hidden>Couldn’t open the camera — you can play with an initials token instead.</p>
       <button class="btn" id="snap" disabled>Take photo</button>
@@ -342,19 +339,19 @@
     const selfie = p.photo; // capture now in case the player retakes later
     const prompt = portraitPrompt(G.players.indexOf(p));
 
-    // InstantID input: `image` is the face to lock onto; the two *_scale params
-    // control how hard the identity is enforced (see the dials above).
+    // PuLID input: `main_face_image` is the face to lock onto; identity_scale controls
+    // how hard the identity is enforced (see the dial above). generation_mode 'fidelity'
+    // favours likeness over stylisation; num_samples: 1 keeps us to a single output.
     runReplicate(token, {
       version: PORTRAIT_VERSION,
       input: {
-        image: selfie,
+        main_face_image: selfie,
         prompt,
         negative_prompt: PORTRAIT_NEGATIVE,
-        ip_adapter_scale: FACE_DETAIL,
-        controlnet_conditioning_scale: IDENTITY_FIDELITY,
-        enable_lcm: true,
-        lcm_num_inference_steps: FAST_STEPS,
-        enable_pose_controlnet: false,
+        identity_scale: IDENTITY_FIDELITY,
+        generation_mode: 'fidelity',
+        num_steps: FAST_STEPS,
+        num_samples: 1,
         output_format: 'jpg',
       },
     })
@@ -530,8 +527,8 @@
       return deadlockIntro();
     }
     // Apply the deaths the plan decided (banishment always; assassination only if it landed).
-    if (plan.banished) { const p = G.players.find((x) => x.name === plan.banished); if (p) p.alive = false; }
-    if (plan.outcome === 'killed') { const p = G.players.find((x) => x.name === plan.victim); if (p) p.alive = false; }
+    if (plan.banished) { const p = G.players.find((x) => x.name === plan.banished); if (p) { p.alive = false; p.fate = 'banished'; } }
+    if (plan.outcome === 'killed') { const p = G.players.find((x) => x.name === plan.victim); if (p) { p.alive = false; p.fate = 'killed'; } }
     G.res = plan;
     return revealVotesIntro();
   }

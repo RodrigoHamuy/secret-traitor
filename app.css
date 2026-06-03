@@ -308,13 +308,16 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   width: 100%; height: auto; aspect-ratio: 1 / 1;
   border-radius: 14px; font-size: 88px;
 }
-/* A slain player's portrait drains to grey with a faint blood-red tint. */
-.dawn-portrait.slain .avatar { position: relative; }
-.dawn-portrait.slain .avatar-img { filter: grayscale(1) contrast(.95) brightness(.92); }
-.dawn-portrait.slain .avatar::after {
+/* A dead player's avatar anywhere it appears: banished drains to grey,
+   killed drains to grey with a blood-red tint. */
+.avatar.banished, .avatar.slain { position: relative; }
+.avatar.banished, .avatar.banished .avatar-img { filter: grayscale(0.5); }
+.avatar.slain, .avatar.slain .avatar-img { filter: grayscale(1) contrast(.95) brightness(.92); }
+.avatar.slain::after {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-  background: rgba(120,18,18,.18); mix-blend-mode: multiply;
+  background: rgba(120,18,18,.30); mix-blend-mode: multiply;
 }
+
 .vote-choice { color: #9e3b2f; }
 
 /* All-ballots-at-once list */
