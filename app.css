@@ -254,22 +254,31 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 }
 .pick.selected .name { color: #5a3210; }
 
-/* Action-specific tint on the chosen card: vote = dark, kill = red, shield = blue. */
+/* Action-specific tint on the chosen card: vote = dark, kill = red, shield = blue.
+   The tint colours the card's frame, name, AND washes over the portrait itself. */
+.pick.selected .avatar { position: relative; }
+.pick.selected .avatar::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit;
+  mix-blend-mode: multiply; opacity: .42; pointer-events: none;
+}
 .tint-vote .pick.selected {
   border-color: #2a1f12;
   box-shadow: inset 0 0 0 2px #2a1f12, 0 4px 16px rgba(0,0,0,.5);
 }
 .tint-vote .pick.selected .name { color: #2a1f12; }
+.tint-vote .pick.selected .avatar::after { background: #2a1f12; }
 .tint-kill .pick.selected {
   border-color: var(--red);
   box-shadow: inset 0 0 0 2px var(--red), 0 4px 18px rgba(200,83,63,.55);
 }
 .tint-kill .pick.selected .name { color: #9e3b2f; }
+.tint-kill .pick.selected .avatar::after { background: var(--red); }
 .tint-shield .pick.selected {
   border-color: #3f6fb0;
   box-shadow: inset 0 0 0 2px #3f6fb0, 0 4px 18px rgba(63,111,176,.55);
 }
 .tint-shield .pick.selected .name { color: #2f4f86; }
+.tint-shield .pick.selected .avatar::after { background: #3f6fb0; }
 .pick .avatar {
   width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 8px;
   font-size: 40px;

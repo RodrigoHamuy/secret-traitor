@@ -146,11 +146,11 @@
 
   // Round 1 has no deaths to reason about, so nudge the table with a playful tell.
   const ROUND1_TEASERS = [
-    'No clues yet — but did someone’s smile linger a beat too long when they saw their role?',
-    'Pure instinct this round. Did anyone giggle, or glance away a little too quickly?',
-    'No evidence, only vibes. Who seemed a touch too pleased with their card?',
-    'Did a poker face slip? A nervous laugh, a sharp little intake of breath?',
-    'Nobody’s died yet. So… who already looks guilty?',
+    'Did anyone giggle, or glance away a little too quickly?',
+    'Whose smile lingered a beat too long?',
+    'Who looked a touch too pleased with their card?',
+    'Did a poker face just slip?',
+    'Who already looks guilty?',
   ];
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
