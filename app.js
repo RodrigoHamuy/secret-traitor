@@ -78,8 +78,10 @@ function render(html, { hint, targetSelector } = {}) {
   }
 }
 
-// Grid of players to pick from. `highlight` = the scripted "correct" tap.
-function pickGrid(highlight, onPick) {
+// Grid of players to pick from, followed by a confirm button.
+// `highlight` = the scripted "correct" pick. `onConfirm(name)` fires when the
+// player has selected someone and tapped the CTA (disabled until a pick is made).
+function pickGrid(highlight, onConfirm, { cta = 'Confirm' } = {}) {
   const cells = players.map((p) => {
     if (p.you) return ''; // you don't pick yourself in this demo
     const cls = p.alive ? 'pick' : 'pick dead';
@@ -88,15 +90,27 @@ function pickGrid(highlight, onPick) {
     </button>`;
   }).join('');
   setTimeout(() => {
+    let selected = null;
+    const confirmBtn = app.querySelector('#pick-confirm');
     if (highlight) {
       const t = app.querySelector(`.pick[data-name="${highlight}"]`);
       if (t) t.classList.add('target');
     }
     app.querySelectorAll('.pick:not(.dead)').forEach((btn) => {
-      btn.addEventListener('click', () => onPick(btn.dataset.name));
+      btn.addEventListener('click', () => {
+        app.querySelectorAll('.pick.selected').forEach((b) => b.classList.remove('selected'));
+        // First pick clears the scripted hint pulse so the CTA can take over.
+        app.querySelectorAll('.pick.target').forEach((b) => b.classList.remove('target'));
+        btn.classList.add('selected');
+        selected = btn.dataset.name;
+        confirmBtn.disabled = false;
+        confirmBtn.classList.add('target');
+      });
     });
+    confirmBtn.onclick = () => { if (selected) onConfirm(selected); };
   }, 0);
-  return `<div class="pick-grid">${cells}</div>`;
+  return `<div class="pick-grid">${cells}</div>
+    <button class="btn" id="pick-confirm" disabled>${cta}</button>`;
 }
 
 // ===================== SCENES =====================
@@ -219,11 +233,11 @@ scenes.night = (round) => {
     <div class="scene-emoji">🌙</div>
     <h2 class="center">Night ${round}</h2>
     <p class="center">Everyone sleeps. As the Guardian, choose someone to protect tonight.</p>
-    ${pickGrid(round === 1 ? 'Cleo' : 'Ava', (name) => scenes.nightWait(round, name))}
+    ${pickGrid(round === 1 ? 'Cleo' : 'Ava', (name) => scenes.nightWait(round, name), { cta: 'Protect' })}
     <div class="spacer"></div>
   `, { hint: round === 1
-        ? "Protect Cleo — tap her card"
-        : "Protect Ava — tap her card" });
+        ? "Protect Cleo — tap her card, then “Protect”"
+        : "Protect Ava — tap her card, then “Protect”" });
 };
 
 scenes.nightWait = (round, saved) => {
@@ -273,9 +287,9 @@ scenes.day = (round) => {
     <p class="eyebrow">Day ${round} · Round table</p>
     <h2>Who do you accuse?</h2>
     <p>Talk it over, then vote to eliminate one suspect.</p>
-    ${pickGrid(target, () => suspense ? scenes.voteReveal(round, 0) : scenes.dayReveal(round, target))}
+    ${pickGrid(target, () => suspense ? scenes.voteReveal(round, 0) : scenes.dayReveal(round, target), { cta: 'Cast vote' })}
     <div class="spacer"></div>
-  `, { hint: `Suspicion falls on ${target} — tap to vote` });
+  `, { hint: `Suspicion falls on ${target} — tap their card, then “Cast vote”` });
 };
 
 // Suspense mode: one player at a time uncovers their vote; the rest wait.

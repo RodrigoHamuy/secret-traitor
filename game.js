@@ -84,7 +84,7 @@
 
   // A "choose a player" screen. `emoji` is a big banner icon so a player doing two
   // selections in a turn can tell at a glance which action they're on.
-  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel }) {
+  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel, cta = 'Confirm' }) {
     const cells = list.map((name) =>
       `<button class="pick" data-name="${esc(name)}">${gAvatar(name)}<span class="name">${esc(name)}</span></button>`
     ).join('');
@@ -95,10 +95,23 @@
       <h2${c}>${esc(title)}</h2>
       ${sub ? `<p${c}>${esc(sub)}</p>` : ''}
       <div class="pick-grid">${cells}</div>
+      <button class="btn" id="confirm" disabled>${esc(cta)}</button>
       ${skipLabel ? `<button class="btn secondary" id="skip">${esc(skipLabel)}</button>` : ''}
       <div class="spacer"></div>
     `);
-    app.querySelectorAll('.pick').forEach((b) => { b.onclick = () => onPick(b.dataset.name); });
+    // Select a player first, then tap the CTA to commit. The CTA stays disabled
+    // until a pick is made so nobody can advance without choosing.
+    let selected = null;
+    const confirmBtn = app.querySelector('#confirm');
+    app.querySelectorAll('.pick').forEach((b) => {
+      b.onclick = () => {
+        app.querySelectorAll('.pick.selected').forEach((x) => x.classList.remove('selected'));
+        b.classList.add('selected');
+        selected = b.dataset.name;
+        confirmBtn.disabled = false;
+      };
+    });
+    confirmBtn.onclick = () => { if (selected) onPick(selected); };
     if (skipLabel) app.querySelector('#skip').onclick = () => onPick(null);
   }
 
@@ -277,13 +290,13 @@
       const targets = G.players.filter((x) => x.alive && x.role !== 'assassin').map((x) => x.name);
       chooseScene({
         emoji: '🗡️', eyebrow: `Round ${G.round} · ASSASSINATE`, title: 'Mark your victim',
-        sub: 'Strike down one of the Virtuous tonight.', list: targets,
+        sub: 'Strike down one of the Virtuous tonight.', list: targets, cta: 'Assassinate',
         onPick: (name) => { G.kills.push({ by: p.name, target: name }); voteStep(i); },
       });
     } else if (p.role === 'guardian') {
       chooseScene({
         emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect',
-        sub: 'They survive any assassination this round.', list: aliveNames(),
+        sub: 'They survive any assassination this round.', list: aliveNames(), cta: 'Protect',
         onPick: (name) => { G.protects.push({ by: p.name, target: name }); voteStep(i); },
       });
     } else {
@@ -296,7 +309,7 @@
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
       emoji: '🗳️', eyebrow: `Round ${G.round} · VOTE`, title: `${p.name}, who do you vote to banish?`,
-      sub: 'You only cast a vote — whoever the majority picks is banished.', list: options,
+      sub: 'You only cast a vote — whoever the majority picks is banished.', list: options, cta: 'Cast vote',
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); turn(i + 1); },
     });
   }
