@@ -61,20 +61,29 @@
   // that ends the game, the strike never lands). A banished Guardian's shield is
   // cancelled. Surviving Assassins' marks are tallied into one victim, who dies
   // unless an active Guardian protects them.
+  //
+  // Draws aren't allowed. Normally a split vote (`vt.tie`) banishes no one and the
+  // caller re-runs the vote; pass `forceBanish: true` to break a remaining tie by
+  // banishing a random one of the tied leaders (used after a second deadlocked vote).
   function resolveRound(state) {
-    const { players, kills = [], protects = [], votes = [] } = state;
+    const { players, kills = [], protects = [], votes = [], forceBanish = false } = state;
     const alive = {}, roleOf = {};
     players.forEach((p) => { alive[p.name] = p.alive; roleOf[p.name] = p.role; });
     const winnerNow = () => winner(players.map((p) => ({ role: p.role, alive: alive[p.name] })));
 
     const vt = tally(votes.map((v) => v.choice));
-    const banished = vt.tie ? null : vt.leaders[0];
+    // A real tie (>1 leader, max>0) is broken randomly only when forced; an empty
+    // tally (max 0, all abstained) can never be forced into a banishment.
+    const banished = vt.tie
+      ? (forceBanish && vt.max > 0 ? vt.leaders[Math.floor(Math.random() * vt.leaders.length)] : null)
+      : vt.leaders[0];
     if (banished) alive[banished] = false;
     const bRole = banished ? roleOf[banished] : null;
+    const tieBroken = vt.tie && !!banished;   // banished by random tiebreak, not a clear majority
 
     const winAfterBanish = winnerNow();
     if (winAfterBanish) {
-      return { banished, bRole, bVotes: vt.max, winAfterBanish,
+      return { banished, bRole, bVotes: vt.max, tieBroken, winAfterBanish,
                victim: null, outcome: 'cancelled', victimRole: null,
                protectedName: null, winner: winAfterBanish };
     }
@@ -91,7 +100,7 @@
       else if (victim === protectedName) outcome = 'saved';
       else { alive[victim] = false; outcome = 'killed'; victimRole = roleOf[victim]; }
     }
-    return { banished, bRole, bVotes: vt.max, winAfterBanish: null,
+    return { banished, bRole, bVotes: vt.max, tieBroken, winAfterBanish: null,
              victim, outcome, victimRole, protectedName, winner: winnerNow() };
   }
 

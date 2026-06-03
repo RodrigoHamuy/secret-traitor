@@ -26,12 +26,18 @@ html, body {
   font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
   color: var(--text);
   background: #070504;
+  padding: 0;
+}
+
+/* Centering lives on body only — putting flex on <html> made <body> shrink-wrap
+   to its content width instead of filling the viewport. */
+body {
+  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  gap: 12px;
+  gap: 0;
 }
 
 /* Phone frame — dark leather with gold piping */
@@ -39,8 +45,8 @@ html, body {
   position: relative;
   width: 100%;
   max-width: 400px;
-  height: min(800px, 92vh);    /* fallback */
-  height: min(800px, 92dvh);   /* dynamic viewport: perfect fit as the address bar moves */
+  height: 100vh;    /* fallback */
+  height: 100dvh;   /* fill the full viewport height */
   border-radius: 26px;
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(201,162,74,.16), transparent 60%),
@@ -72,8 +78,12 @@ html, body {
   flex-direction: column;
   padding: 30px 16px;
   overflow-y: auto;
+  /* Still scrolls, but the bar stays hidden so it never looks like a desktop window. */
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* old Edge/IE */
   animation: fade .4s ease both;
 }
+.app::-webkit-scrollbar { width: 0; height: 0; display: none; }  /* Chrome/Safari */
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* Typography */
@@ -291,6 +301,20 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 12px; font-size: 72px;
 }
 .flip.vote .face.front { padding: 14px; }
+
+/* Dawn reveal: the fallen/spared player's portrait is the focal point. */
+.dawn-portrait { display: flex; justify-content: center; margin: 8px 0 16px; }
+.dawn-portrait .avatar {
+  width: 100%; height: auto; aspect-ratio: 1 / 1;
+  border-radius: 14px; font-size: 88px;
+}
+/* A slain player's portrait drains to grey with a faint blood-red tint. */
+.dawn-portrait.slain .avatar { position: relative; }
+.dawn-portrait.slain .avatar-img { filter: grayscale(1) contrast(.95) brightness(.92); }
+.dawn-portrait.slain .avatar::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: rgba(120,18,18,.18); mix-blend-mode: multiply;
+}
 .vote-choice { color: #9e3b2f; }
 
 /* All-ballots-at-once list */
@@ -334,7 +358,5 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   font-family: 'Cinzel', Georgia, serif; font-size: 11px; font-weight: 600; letter-spacing: .06em;
   border: 1px solid var(--line); color: var(--gold);
 }
-
-.demo-note { color: #6e5b3a; font-size: 12px; margin: 0; font-style: italic; }
 
 @media (min-width: 460px) { body { padding: 24px; } }

@@ -41,6 +41,12 @@
   //   FACE_DETAIL       -> ip_adapter_scale ("image adapter strength, for detail").
   const IDENTITY_FIDELITY = 1.0;    // controlnet_conditioning_scale (likeness)
   const FACE_DETAIL = 0.9;          // ip_adapter_scale (facial detail)
+  // Speed tweaks — InstantID is a heavy multi-model pipeline (face analysis + IdentityNet
+  // ControlNet + IP-Adapter + SDXL), so we trim everything that doesn't affect likeness:
+  //   - LCM sampling: ~6 denoising steps instead of 30 (the biggest win).
+  //   - Pose ControlNet off: we only want the identity, not the selfie's pose, so we drop
+  //     a whole conditioning network. (IdentityNet, the likeness one, stays on.)
+  const FAST_STEPS = 6;             // lcm_num_inference_steps (used when enable_lcm)
 
   // Each player gets a randomly assigned 16th-century character so portraits look
   // distinct at a glance — different role, dress, setting and palette per person.
@@ -213,15 +219,16 @@
         <input type="checkbox" id="selfie" ${s.selfie ? 'checked' : ''} />
         <span class="option-box"></span>
         <span class="option-text"><strong>Selfie avatars</strong>
-          <span class="option-sub">Each player snaps a selfie as their token. Nothing is saved — photos live only in this game, on this phone.</span></span>
+          <span class="option-sub">Each player snaps a selfie as their token. The app saves nothing — photos live only in this game, on this phone. (With a Replicate token below, each selfie is briefly uploaded to Replicate to paint the portrait.)</span></span>
       </label>
       <div class="token-field" id="token-field" ${s.selfie ? '' : 'hidden'}>
         <input class="name-input token-input" id="rep-token" type="text" name="rep-token" autocomplete="off"
           autocorrect="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true"
           data-form-type="other" placeholder="Replicate API token (optional)" value="${esc(s.replicateToken)}" />
         <p class="token-note">Optional. Paints each selfie into a 16th-century portrait in the
-          background. Your token stays on this phone (never saved) and Replicate auto-deletes the
-          photos within an hour. Leave blank for plain selfies.</p>
+          background. To do this, each selfie is sent to Replicate (your account) to generate the
+          portrait — not used to train any model, and auto-deleted within an hour. Your token stays
+          on this phone and is never saved. Leave blank for plain selfies that never leave the phone.</p>
       </div>
       <div class="spacer"></div>
       <button class="btn" id="deal">Deal roles</button>
@@ -280,8 +287,10 @@
     render(`
       <p class="eyebrow center" style="margin-top:6px">Selfie · ${esc(name)}</p>
       <h2 class="center">${esc(name)}, take a selfie</h2>
-      <p class="center">This becomes your token for the game. <strong>Nothing is saved</strong> — your photo
-        lives only in this game, on this phone, and is gone the moment it ends.</p>
+      <p class="center">This becomes your token for the game. <strong>The app saves nothing</strong> — your photo
+        lives only in this game, on this phone, and is gone the moment it ends.${G.settings.replicateToken
+          ? ' To paint it into a portrait, it’s briefly sent to Replicate, then auto-deleted within an hour.'
+          : ''}</p>
       <div class="selfie-stage"><video id="cam" autoplay playsinline muted></video></div>
       <p class="center" id="camnote" hidden>Couldn’t open the camera — you can play with an initials token instead.</p>
       <button class="btn" id="snap" disabled>Take photo</button>
@@ -343,6 +352,9 @@
         negative_prompt: PORTRAIT_NEGATIVE,
         ip_adapter_scale: FACE_DETAIL,
         controlnet_conditioning_scale: IDENTITY_FIDELITY,
+        enable_lcm: true,
+        lcm_num_inference_steps: FAST_STEPS,
+        enable_pose_controlnet: false,
         output_format: 'jpg',
       },
     })
@@ -661,10 +673,10 @@
       <div class="spacer"></div>
       <div class="scene-emoji">${r.tieBroken ? '🎲' : '⚖️'}</div>
       <h2 class="center">${r.tieBroken ? 'Still deadlocked — fate decides' : 'The majority has decided'}</h2>
+      <div class="dawn-portrait">${gAvatar(r.banished)}</div>
       ${r.tieBroken
-        ? `<p class="center">The table tied again. With no majority, lots are drawn — and they fall on ${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong>, who is banished.</p>`
-        : `<p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished.</p>`}
-      <p class="center">Hand them the phone to reveal their allegiance.</p>
+        ? `<p class="center">The table tied again. With no majority, lots are drawn — and they fall on <strong>${esc(r.banished)}</strong>, who is banished.</p>`
+        : `<p class="center"><strong>${esc(r.banished)}</strong> is banished.</p>`}
       <div class="spacer"></div>
       <button class="btn" id="next">Pass the phone to ${esc(r.banished)}</button>
     `, { targetSelector: '#next' });
