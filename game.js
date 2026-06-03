@@ -312,17 +312,19 @@
   }
 
   // After everyone has voted, a reveal phase shows who voted for whom — never a
-  // silent anonymous tally. Suspense mode chooses one-by-one vs all-at-once.
+  // silent anonymous tally. Suspense mode chooses the card pass-around vs all-at-once.
   function revealVotesIntro() {
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">🗳️</div>
       <h2 class="center">The ballots are in</h2>
-      <p class="center">Now everyone reveals who they voted for.</p>
+      <p class="center">${G.settings.suspense
+        ? 'Pass the phone around once more — each player flips their own ballot for the table.'
+        : 'Now everyone reveals who they voted for.'}</p>
       <div class="spacer"></div>
-      <button class="btn" id="next">${G.settings.suspense ? 'Reveal one by one' : 'Reveal the votes'}</button>
+      <button class="btn" id="next">${G.settings.suspense ? 'Begin the reveal' : 'Reveal the votes'}</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => (G.settings.suspense ? voteRevealPublic(0) : voteRevealAll());
+    app.querySelector('#next').onclick = () => (G.settings.suspense ? ballotReveal(0) : voteRevealAll());
   }
 
   // All ballots on one screen.
@@ -335,26 +337,43 @@
       <h2 class="center">Who voted for whom</h2>
       <div class="vote-list">${rows}</div>
       <div class="spacer"></div>
-      <button class="btn" id="next">See the verdict</button>
+      <button class="btn" id="next">See the count</button>
     `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => showBanish();
   }
 
-  // Public, narrator-style reveal of every ballot, one at a time (no passing).
-  function voteRevealPublic(i) {
+  // Card pass-around: hand the phone to each voter, who flips their own ballot
+  // to reveal it to the table — just like the secret-role reveal at the start.
+  function ballotReveal(i) {
     if (i >= G.votes.length) return showBanish();
+    gate(G.votes[i].voter, () => ballotCard(i));
+  }
+
+  function ballotCard(i) {
     const { voter, choice } = G.votes[i];
     const last = i + 1 >= G.votes.length;
     render(`
-      <div class="spacer"></div>
-      <p class="eyebrow center">Ballot ${i + 1} of ${G.votes.length}</p>
-      <div class="vote-line">${gAvatar(voter)}<span>${esc(voter)}</span></div>
-      <div class="vote-arrow center">voted to banish</div>
-      <div class="vote-line"><span class="vote-choice">${esc(choice)}</span>${gAvatar(choice)}</div>
-      <div class="spacer"></div>
-      <button class="btn" id="next">${last ? 'Tally the votes' : 'Next ballot'}</button>
-    `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => voteRevealPublic(i + 1);
+      <p class="eyebrow center" style="margin-top:6px">Ballot ${i + 1} of ${G.votes.length}</p>
+      <h2 class="center">${esc(voter)}’s vote</h2>
+      <div class="reveal">
+        <div class="flip vote" id="flip">
+          <div class="face back"><div class="glyph">🗳️</div><div class="role-name">Tap to reveal</div></div>
+          <div class="face front">
+            <div class="vote-arrow">voted to banish</div>
+            <div class="vote-line"><span class="vote-choice">${esc(choice)}</span>${gAvatar(choice)}</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="next" disabled>${last ? 'See the count' : 'Hide &amp; pass on'}</button>
+    `, { targetSelector: '#flip' });
+    const flip = app.querySelector('#flip');
+    const next = app.querySelector('#next');
+    flip.onclick = () => {
+      if (flip.classList.contains('flipped')) return;
+      flip.classList.add('flipped');
+      next.disabled = false; next.classList.add('target');
+    };
+    next.onclick = () => { if (!next.disabled) ballotReveal(i + 1); };
   }
 
   // A face-down card the just-eliminated player flips to reveal their own role to
@@ -387,14 +406,22 @@
     next.onclick = () => { if (!next.disabled) then(); };
   }
 
+  // The final tally, shown only once every ballot has been revealed.
+  function tallyBlock() {
+    const counts = Engine.tally(G.votes.map((v) => v.choice)).counts;
+    const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([name, n]) =>
+      `<div class="vote-row">${gAvatar(name)}<span class="vr-name">${esc(name)}</span><span class="tally-count">${n}</span></div>`).join('');
+    return `<div class="vote-list">${rows}</div>`;
+  }
+
   function showBanish() {
     const r = G.res;
     if (!r.banished) {
       render(`
-        <div class="spacer"></div>
-        <div class="scene-emoji">⚖️</div>
-        <h2 class="center">The vote is in</h2>
-        <p class="center">${r.bVotes === 0 ? 'No votes were cast.' : 'The vote was tied.'} No one is banished.</p>
+        <div class="scene-emoji" style="margin-top:8px">⚖️</div>
+        <h2 class="center">The count</h2>
+        ${tallyBlock()}
+        <p class="center">${r.bVotes === 0 ? 'No votes were cast.' : 'It’s a tie.'} No one is banished.</p>
         <div class="spacer"></div>
         <button class="btn" id="next">Then, under cover of dark…</button>
       `, { targetSelector: '#next' });
@@ -402,9 +429,9 @@
       return;
     }
     render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">⚖️</div>
-      <h2 class="center">The vote is in</h2>
+      <div class="scene-emoji" style="margin-top:8px">⚖️</div>
+      <h2 class="center">The count</h2>
+      ${tallyBlock()}
       <p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished with ${r.bVotes} vote${r.bVotes > 1 ? 's' : ''}.</p>
       <p class="center">Hand them the phone to reveal their allegiance.</p>
       <div class="spacer"></div>
