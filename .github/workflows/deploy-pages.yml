@@ -41,7 +41,7 @@ jobs:
         run: |
           mkdir -p _site
           # Copy only the files the site needs (skip .git, .github, *.md, etc.)
-          cp index.html app.css app.js _site/
+          cp index.html app.css app.js engine.js game.js _site/
           # Disable Jekyll so files/folders are served verbatim.
           touch _site/.nojekyll
 
