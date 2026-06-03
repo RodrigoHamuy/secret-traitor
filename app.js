@@ -71,11 +71,36 @@ function setHint(text) {
 // Render a scene's HTML, then mark the action(s) the user should tap.
 function render(html, { hint, targetSelector } = {}) {
   app.innerHTML = html;
-  app.scrollTop = 0;
+  layoutScreen();
+  const content = app.querySelector('.app-content');
+  if (content) content.scrollTop = 0;
   setHint(hint);
   if (targetSelector) {
     app.querySelectorAll(targetSelector).forEach((el) => el.classList.add('target'));
   }
+}
+
+// Split the rendered screen into a scrollable content area and a pinned CTA footer,
+// so the call-to-action buttons are always anchored to the bottom (even when the
+// content is short) and stay visible above the on-screen keyboard.
+function layoutScreen() {
+  if (typeof app.removeChild !== 'function') return; // non-DOM test stub: skip
+  // Drop any spacer sitting after the buttons (it would push the footer up).
+  while (app.lastElementChild && app.lastElementChild.classList.contains('spacer')) {
+    app.removeChild(app.lastElementChild);
+  }
+  // Pull the trailing run of .btn elements into the footer (keeps their order).
+  const footer = document.createElement('div');
+  footer.className = 'cta-footer';
+  while (app.lastElementChild && app.lastElementChild.classList.contains('btn')) {
+    footer.insertBefore(app.removeChild(app.lastElementChild), footer.firstChild);
+  }
+  // Everything else becomes the scrollable content area.
+  const content = document.createElement('div');
+  content.className = 'app-content';
+  while (app.firstChild) content.appendChild(app.firstChild);
+  app.appendChild(content);
+  if (footer.childElementCount) app.appendChild(footer);
 }
 
 // Grid of players to pick from, followed by a confirm button.
@@ -401,6 +426,17 @@ scenes.win = () => {
     scenes.title();
   };
 };
+
+// Track the on-screen keyboard: shrink the phone to the visible viewport (via
+// --vvh) so the pinned CTA footer is never hidden behind the keyboard.
+(function trackViewport() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const fit = () => document.documentElement.style.setProperty('--vvh', `${Math.round(vv.height)}px`);
+  vv.addEventListener('resize', fit);
+  vv.addEventListener('scroll', fit);
+  fit();
+})();
 
 // kick things off
 scenes.title();

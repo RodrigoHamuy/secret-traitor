@@ -43,7 +43,9 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* Anchor to the top so when the phone shrinks for the keyboard it doesn't get
+     re-centred down behind it. */
+  justify-content: flex-start;
   gap: 0;
 }
 
@@ -52,8 +54,9 @@ body {
   position: relative;
   width: 100%;
   max-width: 400px;
-  height: 100vh;    /* fallback */
-  height: 100dvh;   /* fill the full viewport height */
+  height: 100vh;            /* fallback */
+  height: 100dvh;           /* fill the full viewport height */
+  height: var(--vvh, 100dvh); /* tracks the visible area when the keyboard opens */
   border-radius: 26px;
   background:
     radial-gradient(120% 80% at 50% -10%, rgba(201,162,74,.16), transparent 60%),
@@ -84,13 +87,20 @@ body {
   display: flex;
   flex-direction: column;
   padding: 30px 16px;
-  overflow-y: auto;
-  /* Still scrolls, but the bar stays hidden so it never looks like a desktop window. */
+  overflow: hidden;             /* the content area scrolls, not the whole app */
+  min-height: 0;
+}
+/* Scrollable content; the CTA footer is pinned below it (see layoutScreen). */
+.app-content {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column;
   scrollbar-width: none;        /* Firefox */
   -ms-overflow-style: none;     /* old Edge/IE */
   animation: fade .4s ease both;
 }
-.app::-webkit-scrollbar { width: 0; height: 0; display: none; }  /* Chrome/Safari */
+.app-content::-webkit-scrollbar { width: 0; height: 0; display: none; }  /* Chrome/Safari */
+/* Call-to-action buttons, always anchored to the bottom of the screen. */
+.cta-footer { flex: 0 0 auto; }
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* Typography */
