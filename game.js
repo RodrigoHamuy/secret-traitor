@@ -199,7 +199,7 @@
     return `<div class="stepper">${cells}</div>`;
   }
 
-  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel, cta = 'Confirm', ctaEmoji, steps }) {
+  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel, cta = 'Confirm', ctaEmoji, steps, tint }) {
     const cells = list.map((name) =>
       `<button class="pick" data-name="${esc(name)}">${gAvatar(name)}<span class="name">${esc(name)}</span></button>`
     ).join('');
@@ -210,7 +210,7 @@
       ${eyebrow ? `<p class="eyebrow${emoji ? ' center' : ''}">${esc(eyebrow)}</p>` : ''}
       <h2${c}>${esc(title)}</h2>
       ${sub ? `<p${c}>${esc(sub)}</p>` : ''}
-      <div class="pick-grid">${cells}</div>
+      <div class="pick-grid${tint ? ' tint-' + tint : ''}">${cells}</div>
       <button class="btn${ctaEmoji ? ' has-emoji' : ''}" id="confirm" disabled>${ctaEmoji
         ? `<span class="cta-side"><span class="emoji">${ctaEmoji}</span></span><span class="cta-label">${esc(cta)}</span><span class="cta-side"></span>`
         : esc(cta)}</button>
@@ -608,7 +608,7 @@
       const targets = G.players.filter((x) => x.alive && x.role !== 'assassin').map((x) => x.name);
       chooseScene({
         steps: { labels: ['Vote', 'Assassinate'], active: 1 },
-        emoji: '🗡️', eyebrow: `Round ${G.round} · ASSASSINATE`, title: 'Mark your victim',
+        emoji: '🗡️', eyebrow: `Round ${G.round} · ASSASSINATE`, title: 'Mark your victim', tint: 'kill',
         sub: 'Strike down one of the Virtuous tonight.', list: targets, cta: 'Assassinate', ctaEmoji: '🗡️',
         onPick: (name) => { G.kills.push({ by: p.name, target: name }); turn(i + 1); },
       });
@@ -616,7 +616,7 @@
       const targets = alivePlayers().filter((x) => x.name !== p.name).map((x) => x.name);
       chooseScene({
         steps: { labels: ['Vote', 'Protect'], active: 1 },
-        emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect',
+        emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect', tint: 'shield',
         sub: 'They survive any assassination this round.', list: targets, cta: 'Protect', ctaEmoji: '🛡️',
         onPick: (name) => { G.protects.push({ by: p.name, target: name }); turn(i + 1); },
       });
@@ -630,7 +630,7 @@
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
       steps,
-      emoji: '🗳️', eyebrow: `Round ${G.round}${G.revoted ? ' · RE-VOTE' : ''} · VOTE`,
+      emoji: '🗳️', eyebrow: `Round ${G.round}${G.revoted ? ' · RE-VOTE' : ''} · VOTE`, tint: 'vote',
       title: `${p.name}, who do you vote to banish?`,
       sub: 'You only cast a vote — whoever the majority picks is banished.', list: options, cta: 'Cast vote', ctaEmoji: '🗳️',
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); next(i + 1); },
