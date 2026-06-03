@@ -82,15 +82,18 @@
     app.querySelector('#go').onclick = then;
   }
 
-  // A "choose a player" screen (free choice — the title makes the ask clear).
-  function chooseScene({ eyebrow, title, sub, list, onPick, skipLabel }) {
+  // A "choose a player" screen. `emoji` is a big banner icon so a player doing two
+  // selections in a turn can tell at a glance which action they're on.
+  function chooseScene({ emoji, eyebrow, title, sub, list, onPick, skipLabel }) {
     const cells = list.map((name) =>
       `<button class="pick" data-name="${esc(name)}">${gAvatar(name)}<span class="name">${esc(name)}</span></button>`
     ).join('');
+    const c = emoji ? ' class="center"' : '';
     render(`
-      ${eyebrow ? `<p class="eyebrow">${esc(eyebrow)}</p>` : ''}
-      <h2>${esc(title)}</h2>
-      ${sub ? `<p>${esc(sub)}</p>` : ''}
+      ${emoji ? `<div class="scene-emoji" style="margin-top:8px">${emoji}</div>` : ''}
+      ${eyebrow ? `<p class="eyebrow${emoji ? ' center' : ''}">${esc(eyebrow)}</p>` : ''}
+      <h2${c}>${esc(title)}</h2>
+      ${sub ? `<p${c}>${esc(sub)}</p>` : ''}
       <div class="pick-grid">${cells}</div>
       ${skipLabel ? `<button class="btn secondary" id="skip">${esc(skipLabel)}</button>` : ''}
       <div class="spacer"></div>
@@ -273,13 +276,13 @@
     if (p.role === 'assassin') {
       const targets = G.players.filter((x) => x.alive && x.role !== 'assassin').map((x) => x.name);
       chooseScene({
-        eyebrow: `Round ${G.round} · in secret`, title: 'Mark your victim',
+        emoji: '🗡️', eyebrow: `Round ${G.round} · ASSASSINATE`, title: 'Mark your victim',
         sub: 'Strike down one of the Virtuous tonight.', list: targets,
         onPick: (name) => { G.kills.push({ by: p.name, target: name }); voteStep(i); },
       });
     } else if (p.role === 'guardian') {
       chooseScene({
-        eyebrow: `Round ${G.round} · in secret`, title: 'Choose who to protect',
+        emoji: '🛡️', eyebrow: `Round ${G.round} · PROTECT`, title: 'Choose who to protect',
         sub: 'They survive any assassination this round.', list: aliveNames(),
         onPick: (name) => { G.protects.push({ by: p.name, target: name }); voteStep(i); },
       });
@@ -292,8 +295,8 @@
     const p = G.order[i];
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
-      eyebrow: `Round ${G.round} · your vote`, title: `${p.name}, who do you banish?`,
-      sub: 'You must vote — no abstaining.', list: options,
+      emoji: '🗳️', eyebrow: `Round ${G.round} · VOTE`, title: `${p.name}, who do you vote to banish?`,
+      sub: 'You only cast a vote — whoever the majority picks is banished. No abstaining.', list: options,
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); turn(i + 1); },
     });
   }
