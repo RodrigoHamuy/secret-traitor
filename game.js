@@ -2,6 +2,11 @@
  * Drives a full game on one shared phone, narrated like a game master.
  * Reuses render()/setHint()/app/scenes from app.js and window.Engine from engine.js.
  * Exposed as window.Game.
+ *
+ * Note: the real game intentionally passes no `hint`, so the bottom hint banner
+ * stays hidden — screen text + button labels carry the instructions. A privacy
+ * gate ("Pass the phone to X" → "I'm X") guards every private screen so nothing
+ * is revealed while the phone is being handed over.
  */
 (function () {
   const COLORS = ['#e8c468', '#9fc06f', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a',
@@ -38,8 +43,22 @@
   const aliveNames = () => G.players.filter((p) => p.alive).map((p) => p.name);
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
 
-  // A "choose a player" screen (free choice — the hint guides, nothing is pre-highlighted).
-  function chooseScene({ eyebrow, title, sub, list, hint, onPick, skipLabel }) {
+  // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
+  // screen only renders once the recipient confirms — nothing leaks while passing.
+  function gate(who, then, opts = {}) {
+    render(`
+      <div class="spacer"></div>
+      <div class="scene-emoji">📱</div>
+      <h2 class="center">Pass the phone to ${esc(who)}</h2>
+      <p class="center">${opts.sub || 'Hand it over before tapping.'}</p>
+      <div class="spacer"></div>
+      <button class="btn" id="go">${esc(opts.btn || `I’m ${who}`)}</button>
+    `, { targetSelector: '#go' });
+    app.querySelector('#go').onclick = then;
+  }
+
+  // A "choose a player" screen (free choice — the title makes the ask clear).
+  function chooseScene({ eyebrow, title, sub, list, onPick, skipLabel }) {
     const cells = list.map((name) =>
       `<button class="pick" data-name="${esc(name)}">${gAvatar(name)}<span class="name">${esc(name)}</span></button>`
     ).join('');
@@ -50,7 +69,7 @@
       <div class="pick-grid">${cells}</div>
       ${skipLabel ? `<button class="btn secondary" id="skip">${esc(skipLabel)}</button>` : ''}
       <div class="spacer"></div>
-    `, { hint });
+    `);
     app.querySelectorAll('.pick').forEach((b) => { b.onclick = () => onPick(b.dataset.name); });
     if (skipLabel) app.querySelector('#skip').onclick = () => onPick(null);
   }
@@ -81,7 +100,7 @@
       </label>
       <div class="spacer"></div>
       <button class="btn" id="deal">Deal roles</button>
-    `, { hint: 'Set the players, then tap “Deal roles”', targetSelector: '#deal' });
+    `, { targetSelector: '#deal' });
 
     app.querySelector('#minus').onclick = () => { if (s.names.length > 5) { s.names.pop(); setup(); } };
     app.querySelector('#plus').onclick = () => { if (s.names.length < 12) { s.names.push(`Player ${s.names.length + 1}`); setup(); } };
@@ -101,13 +120,17 @@
   // ---------- Secret role reveal (pass & play) ----------
   function reveal(i) {
     if (i >= G.players.length) { G.round = 1; return nightIntro(); }
+    gate(G.players[i].name, () => revealCard(i));
+  }
+
+  function revealCard(i) {
     const p = G.players[i];
     const info = ROLE_INFO[p.role];
     const mates = p.role === 'assassin'
       ? G.players.filter((x) => x.role === 'assassin' && x.name !== p.name).map((x) => x.name) : [];
     render(`
       <p class="eyebrow center" style="margin-top:6px">Secret roles · ${i + 1} of ${G.players.length}</p>
-      <h2 class="center">Pass the phone to ${esc(p.name)}</h2>
+      <h2 class="center">${esc(p.name)}, this is you</h2>
       <div class="reveal">
         <div class="flip" id="flip">
           <div class="face back"><div class="glyph">🤫</div><div class="role-name">Tap to reveal</div></div>
@@ -120,7 +143,7 @@
         </div>
       </div>
       <button class="btn" id="next" hidden>Hide &amp; pass on</button>
-    `, { hint: `Hand the phone to ${esc(p.name)}, then tap to reveal`, targetSelector: '#flip' });
+    `, { targetSelector: '#flip' });
 
     const flip = app.querySelector('#flip');
     const next = app.querySelector('#next');
@@ -128,7 +151,6 @@
       if (flip.classList.contains('flipped')) return;
       flip.classList.add('flipped');
       next.hidden = false; next.classList.add('target');
-      setHint('Memorise it, then tap “Hide & pass on”');
     };
     next.onclick = () => reveal(i + 1);
   }
@@ -142,50 +164,32 @@
       <p class="center">Everyone, close your eyes. The phone will summon those who stir in the dark.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">Begin the night</button>
-    `, { hint: 'Tap “Begin the night”', targetSelector: '#next' });
+    `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => nightAssassins();
   }
 
   function nightAssassins() {
     const assassins = G.players.filter((p) => p.role === 'assassin' && p.alive).map((p) => p.name);
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">🗡️</div>
-      <h2 class="center">Assassins, awaken</h2>
-      <p class="center">Everyone else, eyes shut.<br>Pass the phone to <strong>${esc(assassins.join(' & '))}</strong>.</p>
-      <div class="spacer"></div>
-      <button class="btn" id="next">We have it — choose a victim</button>
-    `, { hint: `Hand the phone to ${esc(assassins.join(' & '))}`, targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => {
+    gate(assassins.join(' & '), () => {
       const targets = G.players.filter((p) => p.alive && p.role !== 'assassin').map((p) => p.name);
       chooseScene({
         eyebrow: `Night ${G.round}`, title: 'Choose a victim',
         sub: 'Who do the Assassins strike tonight?', list: targets,
-        hint: 'Tap the player to eliminate',
         onPick: (name) => { G.nightVictim = name; passBack('Assassins', nightGuardian); },
       });
-    };
+    }, { btn: 'We have the phone', sub: 'Assassins only. Everyone else, eyes shut.' });
   }
 
   function nightGuardian() {
     const g = G.players.find((p) => p.role === 'guardian' && p.alive);
     if (!g) return dawn();
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">🛡️</div>
-      <h2 class="center">Guardian, awaken</h2>
-      <p class="center">Everyone else, eyes shut.<br>Pass the phone to <strong>${esc(g.name)}</strong>.</p>
-      <div class="spacer"></div>
-      <button class="btn" id="next">I have it — choose who to protect</button>
-    `, { hint: `Hand the phone to ${esc(g.name)}`, targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => {
+    gate(g.name, () => {
       chooseScene({
         eyebrow: `Night ${G.round}`, title: 'Choose who to protect',
         sub: 'They will survive the Assassins tonight.', list: aliveNames(),
-        hint: 'Tap the player to protect',
         onPick: (name) => { G.nightProtect = name; passBack(g.name, dawn); },
       });
-    };
+    }, { sub: 'Guardian only. Everyone else, eyes shut.' });
   }
 
   // "Close your eyes, pass it back" interstitial between secret turns.
@@ -197,7 +201,7 @@
       <p class="center">Pass the phone back to the table.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">Continue</button>
-    `, { hint: 'Tap “Continue”', targetSelector: '#next' });
+    `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => then();
   }
 
@@ -229,7 +233,7 @@
       ${body}
       <div class="spacer"></div>
       <button class="btn" id="next">${w ? 'See the outcome' : 'To the round table'}</button>
-    `, { hint: 'Tap to continue', targetSelector: '#next' });
+    `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => (w ? win(w) : dayIntro());
   }
 
@@ -243,40 +247,35 @@
       <p class="center"><span class="pill">${aliveNames().length} still alive</span></p>
       <div class="spacer"></div>
       <button class="btn" id="next">Begin voting</button>
-    `, { hint: 'Discuss, then tap “Begin voting”', targetSelector: '#next' });
+    `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => { G.voters = aliveNames(); G.votes = []; vote(0); };
   }
 
   function vote(i) {
     if (i >= G.voters.length) return G.settings.suspense ? voteReveal(0) : resolveDay();
     const voter = G.voters[i];
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">🗳️</div>
-      <p class="eyebrow center">Ballot ${i + 1} of ${G.voters.length}</p>
-      <h2 class="center">Pass the phone to ${esc(voter)}</h2>
-      <p class="center">Your vote is secret.</p>
-      <div class="spacer"></div>
-      <button class="btn" id="next">I’m ${esc(voter)} — cast my vote</button>
-    `, { hint: `Hand the phone to ${esc(voter)}`, targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => {
+    gate(voter, () => {
       const options = G.players.filter((p) => p.alive && p.name !== voter).map((p) => p.name);
       chooseScene({
         eyebrow: `Ballot ${i + 1} of ${G.voters.length}`, title: `${voter}, who do you banish?`,
-        list: options, hint: 'Tap your choice — or abstain', skipLabel: 'Abstain',
+        list: options, skipLabel: 'Abstain',
         onPick: (name) => { G.votes.push({ voter, choice: name }); vote(i + 1); },
       });
-    };
+    }, { sub: 'Your vote is secret.' });
   }
 
   function voteReveal(i) {
     if (i >= G.votes.length) return resolveDay();
+    gate(G.votes[i].voter, () => voteRevealCard(i));
+  }
+
+  function voteRevealCard(i) {
     const { voter, choice } = G.votes[i];
     const last = i + 1 >= G.votes.length;
     const nextLabel = last ? 'Tally the votes' : 'Next ballot';
     render(`
       <p class="eyebrow center" style="margin-top:6px">Reveal ${i + 1} of ${G.votes.length}</p>
-      <h2 class="center">Pass the phone to ${esc(voter)}</h2>
+      <h2 class="center">${esc(voter)}’s vote</h2>
       <div class="reveal">
         <div class="flip vote" id="flip">
           <div class="face back"><div class="glyph">🤫</div><div class="role-name">Tap to reveal</div></div>
@@ -288,7 +287,7 @@
         </div>
       </div>
       <button class="btn" id="next" hidden>${nextLabel}</button>
-    `, { hint: `Hand the phone to ${esc(voter)}, then tap to reveal`, targetSelector: '#flip' });
+    `, { targetSelector: '#flip' });
 
     const flip = app.querySelector('#flip');
     const next = app.querySelector('#next');
@@ -296,7 +295,6 @@
       if (flip.classList.contains('flipped')) return;
       flip.classList.add('flipped');
       next.hidden = false; next.classList.add('target');
-      setHint(`Tap “${nextLabel}”`);
     };
     next.onclick = () => voteReveal(i + 1);
   }
@@ -311,7 +309,7 @@
         <p class="center">No one is banished today. Night falls again.</p>
         <div class="spacer"></div>
         <button class="btn" id="next">To nightfall</button>
-      `, { hint: 'Tap “To nightfall”', targetSelector: '#next' });
+      `, { targetSelector: '#next' });
       app.querySelector('#next').onclick = () => { G.round++; nightIntro(); };
       return;
     }
@@ -327,7 +325,7 @@
       <p class="center">${esc(name)} was ${roleWord(p.role)}.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">${w ? 'See the outcome' : 'Continue'}</button>
-    `, { hint: 'Tap to continue', targetSelector: '#next' });
+    `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => (w ? win(w) : roundSummary());
   }
 
@@ -343,7 +341,7 @@
         still hide among you.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">To nightfall</button>
-    `, { hint: 'Tap “To nightfall”', targetSelector: '#next' });
+    `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => { G.round++; nightIntro(); };
   }
 
@@ -364,7 +362,7 @@
       <div class="reveal-roles">${roster}</div>
       <div class="spacer"></div>
       <button class="btn" id="again">Play Again</button>
-    `, { hint: 'Tap “Play Again”', targetSelector: '#again' });
+    `, { targetSelector: '#again' });
     app.querySelector('#again').onclick = () => scenes.title();
   }
 
