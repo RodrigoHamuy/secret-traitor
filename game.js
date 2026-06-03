@@ -296,7 +296,7 @@
     const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
     chooseScene({
       emoji: '🗳️', eyebrow: `Round ${G.round} · VOTE`, title: `${p.name}, who do you vote to banish?`,
-      sub: 'You only cast a vote — whoever the majority picks is banished. No abstaining.', list: options,
+      sub: 'You only cast a vote — whoever the majority picks is banished.', list: options,
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); turn(i + 1); },
     });
   }
