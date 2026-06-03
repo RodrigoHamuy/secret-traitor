@@ -185,9 +185,15 @@
   // screen only renders once the recipient confirms — nothing leaks while passing.
   function gate(who, then, opts = {}) {
     G.lastHolder = who; // whoever takes the phone is now the latest holder
+    // Show their avatar so the table knows who to hand it to — but only once they
+    // have an identity (named / has a token); before that, fall back to the 📱.
+    const p = G.players.find((x) => x.name === who);
+    const head = (p && (p.photo || p.named))
+      ? `<div class="gate-avatar">${gAvatar(who)}</div>`
+      : `<div class="scene-emoji">📱</div>`;
     render(`
       <div class="spacer"></div>
-      <div class="scene-emoji">📱</div>
+      ${head}
       <h2 class="center">Pass the phone to ${esc(who)}</h2>
       <p class="center">${opts.sub || 'Hand it over before tapping.'}</p>
       <div class="spacer"></div>

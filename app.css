@@ -214,6 +214,11 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+/* Large avatar on the "Pass the phone to X" gate */
+.gate-avatar { display: flex; justify-content: center; margin: auto auto 14px; }
+.gate-avatar .avatar { width: 112px; height: 112px; font-size: 42px;
+  box-shadow: 0 0 0 2px #14100a, 0 0 0 4px rgba(201,162,74,.6), 0 8px 24px rgba(0,0,0,.5); }
+
 /* While a selfie is being repainted into a period portrait in the background, a
    gentle gilt shimmer rings the avatar. It clears the moment the portrait swaps in. */
 .avatar.enhancing { animation: enhance-pulse 1.4s ease-in-out infinite; }
