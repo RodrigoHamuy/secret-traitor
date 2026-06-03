@@ -308,22 +308,51 @@
     if (plan.banished) { const p = G.players.find((x) => x.name === plan.banished); if (p) p.alive = false; }
     if (plan.outcome === 'killed') { const p = G.players.find((x) => x.name === plan.victim); if (p) p.alive = false; }
     G.res = plan;
-    return G.settings.suspense ? voteRevealPublic(0) : showBanish();
+    return revealVotesIntro();
   }
 
-  // Public, narrator-style reveal of every ballot (no passing — everyone watches).
+  // After everyone has voted, a reveal phase shows who voted for whom — never a
+  // silent anonymous tally. Suspense mode chooses one-by-one vs all-at-once.
+  function revealVotesIntro() {
+    render(`
+      <div class="spacer"></div>
+      <div class="scene-emoji">🗳️</div>
+      <h2 class="center">The ballots are in</h2>
+      <p class="center">Now everyone reveals who they voted for.</p>
+      <div class="spacer"></div>
+      <button class="btn" id="next">${G.settings.suspense ? 'Reveal one by one' : 'Reveal the votes'}</button>
+    `, { targetSelector: '#next' });
+    app.querySelector('#next').onclick = () => (G.settings.suspense ? voteRevealPublic(0) : voteRevealAll());
+  }
+
+  // All ballots on one screen.
+  function voteRevealAll() {
+    const rows = G.votes.map((v) => `
+      <div class="vote-row">${gAvatar(v.voter)}<span class="vr-name">${esc(v.voter)}</span>
+        <span class="vr-arrow">→</span>${gAvatar(v.choice)}<span class="vr-name">${esc(v.choice)}</span></div>`).join('');
+    render(`
+      <p class="eyebrow center" style="margin-top:6px">The ballots</p>
+      <h2 class="center">Who voted for whom</h2>
+      <div class="vote-list">${rows}</div>
+      <div class="spacer"></div>
+      <button class="btn" id="next">See the verdict</button>
+    `, { targetSelector: '#next' });
+    app.querySelector('#next').onclick = () => showBanish();
+  }
+
+  // Public, narrator-style reveal of every ballot, one at a time (no passing).
   function voteRevealPublic(i) {
     if (i >= G.votes.length) return showBanish();
     const { voter, choice } = G.votes[i];
     const last = i + 1 >= G.votes.length;
     render(`
       <div class="spacer"></div>
-      <p class="eyebrow center">Votes · ${i + 1} of ${G.votes.length}</p>
+      <p class="eyebrow center">Ballot ${i + 1} of ${G.votes.length}</p>
       <div class="vote-line">${gAvatar(voter)}<span>${esc(voter)}</span></div>
-      <div class="vote-arrow center">${choice ? 'voted to banish' : 'abstained'}</div>
-      ${choice ? `<div class="vote-line"><span class="vote-choice">${esc(choice)}</span>${gAvatar(choice)}</div>` : ''}
+      <div class="vote-arrow center">voted to banish</div>
+      <div class="vote-line"><span class="vote-choice">${esc(choice)}</span>${gAvatar(choice)}</div>
       <div class="spacer"></div>
-      <button class="btn" id="next">${last ? 'Tally the votes' : 'Next vote'}</button>
+      <button class="btn" id="next">${last ? 'Tally the votes' : 'Next ballot'}</button>
     `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => voteRevealPublic(i + 1);
   }

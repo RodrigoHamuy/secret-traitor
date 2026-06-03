@@ -265,6 +265,14 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
               font-size: 11px; text-transform: uppercase; color: #8a6a2f; }
 .vote-choice { color: #9e3b2f; }
 
+/* All-ballots-at-once list */
+.vote-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.vote-row { display: flex; align-items: center; gap: 8px; justify-content: center;
+            font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 13px; }
+.vote-row .avatar { width: 28px; height: 28px; font-size: 11px; }
+.vr-name { max-width: 5.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vr-arrow { color: var(--muted); margin: 0 2px; }
+
 /* Role reveal card (flip) */
 .reveal { perspective: 1200px; margin: auto 0; }
 .flip { position: relative; width: 100%; aspect-ratio: 3/4; transform-style: preserve-3d;
