@@ -54,5 +54,46 @@
     return { counts, leaders, max, tie: max === 0 || leaders.length !== 1 };
   }
 
-  window.Engine = { shuffle, roleCounts, dealRoles, winner, tally };
+  // Resolve one combined round. Pure: does not mutate `state`; returns a plan.
+  //   state = { players:[{name,role,alive}], kills:[{by,target}],
+  //             protects:[{by,target}], votes:[{voter,choice}] }
+  // Rules: tally votes -> banish. A banished Assassin's mark is cancelled (and if
+  // that ends the game, the strike never lands). A banished Guardian's shield is
+  // cancelled. Surviving Assassins' marks are tallied into one victim, who dies
+  // unless an active Guardian protects them.
+  function resolveRound(state) {
+    const { players, kills = [], protects = [], votes = [] } = state;
+    const alive = {}, roleOf = {};
+    players.forEach((p) => { alive[p.name] = p.alive; roleOf[p.name] = p.role; });
+    const winnerNow = () => winner(players.map((p) => ({ role: p.role, alive: alive[p.name] })));
+
+    const vt = tally(votes.map((v) => v.choice));
+    const banished = vt.tie ? null : vt.leaders[0];
+    if (banished) alive[banished] = false;
+    const bRole = banished ? roleOf[banished] : null;
+
+    const winAfterBanish = winnerNow();
+    if (winAfterBanish) {
+      return { banished, bRole, bVotes: vt.max, winAfterBanish,
+               victim: null, outcome: 'cancelled', victimRole: null,
+               protectedName: null, winner: winAfterBanish };
+    }
+
+    const activeKills = kills.filter((k) => alive[k.by]);     // banished assassin cancelled
+    const prot = protects[0];
+    const protectedName = (prot && alive[prot.by]) ? prot.target : null; // banished guardian cancelled
+    const at = tally(activeKills.map((k) => k.target));
+    const victim = at.tie ? null : at.leaders[0];
+
+    let outcome = 'none', victimRole = null;
+    if (victim) {
+      if (!alive[victim]) outcome = 'already';               // already banished this round
+      else if (victim === protectedName) outcome = 'saved';
+      else { alive[victim] = false; outcome = 'killed'; victimRole = roleOf[victim]; }
+    }
+    return { banished, bRole, bVotes: vt.max, winAfterBanish: null,
+             victim, outcome, victimRole, protectedName, winner: winnerNow() };
+  }
+
+  window.Engine = { shuffle, roleCounts, dealRoles, winner, tally, resolveRound };
 })();

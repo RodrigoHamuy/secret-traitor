@@ -3,10 +3,17 @@
  * Reuses render()/setHint()/app/scenes from app.js and window.Engine from engine.js.
  * Exposed as window.Game.
  *
- * Note: the real game intentionally passes no `hint`, so the bottom hint banner
- * stays hidden — screen text + button labels carry the instructions. A privacy
- * gate ("Pass the phone to X" → "I'm X") guards every private screen so nothing
- * is revealed while the phone is being handed over.
+ * Flow: there is no separate night/day with "eyes shut". Each round the phone
+ * passes around the table once. On their private turn (behind the "I'm X" gate),
+ * an Assassin picks a victim then votes, a Guardian picks who to protect then
+ * votes, and everyone else just votes. Because every player takes the phone in
+ * turn order and the gate never names a role, identities stay hidden.
+ *
+ * Resolution: tally votes -> banish -> resolve the assassination. A banished
+ * Assassin's strike is cancelled (and if it was the last Assassin, the game is
+ * already over). A banished Guardian's shield is cancelled, but play continues.
+ *
+ * The real game passes no `hint`, so the bottom hint banner stays hidden.
  */
 (function () {
   const COLORS = ['#e8c468', '#9fc06f', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a',
@@ -14,16 +21,16 @@
 
   const ROLE_INFO = {
     virtuous: { label: 'VIRTUOUS', cls: 'role-virtuous', glyph: '🍷',
-      desc: 'You are innocent. Find the Assassins and vote them out by day.' },
+      desc: 'You are innocent. Each round, vote to banish the Assassins before they outnumber you.' },
     guardian: { label: 'GUARDIAN', cls: 'role-guardian', glyph: '🛡️',
-      desc: 'Each night, secretly choose someone to protect. If the Assassins strike them, they survive.' },
+      desc: 'Each round, secretly choose someone to protect from assassination — then cast your vote like everyone else.' },
     assassin: { label: 'ASSASSIN', cls: 'role-assassin', glyph: '🗡️',
-      desc: 'Each night, choose a victim. Eliminate the Virtuous until you rule.' },
+      desc: 'Each round, secretly mark a victim to assassinate — then cast your vote to deflect suspicion.' },
   };
 
   // Mutable game state.
-  const G = { setup: null, players: [], settings: {}, round: 0, voters: [], votes: [],
-              nightVictim: null, nightProtect: null };
+  const G = { setup: null, players: [], settings: {}, round: 0,
+              order: [], kills: [], protects: [], votes: [], res: null };
 
   // --- small helpers ---
   const esc = (s) => String(s)
@@ -40,7 +47,9 @@
     if (r === 'guardian') return 'the <strong style="color:#86a6d0">Guardian</strong>';
     return 'one of the <strong style="color:var(--green)">Virtuous</strong>';
   }
-  const aliveNames = () => G.players.filter((p) => p.alive).map((p) => p.name);
+  const alivePlayers = () => G.players.filter((p) => p.alive);
+  const aliveNames = () => alivePlayers().map((p) => p.name);
+  const aliveAssassins = () => G.players.filter((p) => p.role === 'assassin' && p.alive).length;
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
 
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
@@ -96,7 +105,7 @@
         <input type="checkbox" id="suspense" ${s.suspense ? 'checked' : ''} />
         <span class="option-box"></span>
         <span class="option-text"><strong>Suspense mode</strong>
-          <span class="option-sub">Reveal the votes one at a time.</span></span>
+          <span class="option-sub">Reveal the votes one by one before the verdict.</span></span>
       </label>
       <div class="spacer"></div>
       <button class="btn" id="deal">Deal roles</button>
@@ -119,7 +128,7 @@
 
   // ---------- Secret role reveal (pass & play) ----------
   function reveal(i) {
-    if (i >= G.players.length) { G.round = 1; return nightIntro(); }
+    if (i >= G.players.length) { G.round = 1; return roundIntro(); }
     gate(G.players[i].name, () => revealCard(i));
   }
 
@@ -142,7 +151,7 @@
           </div>
         </div>
       </div>
-      <button class="btn" id="next" hidden>Hide &amp; pass on</button>
+      <button class="btn" id="next" disabled>Hide &amp; pass on</button>
     `, { targetSelector: '#flip' });
 
     const flip = app.querySelector('#flip');
@@ -150,179 +159,135 @@
     flip.onclick = () => {
       if (flip.classList.contains('flipped')) return;
       flip.classList.add('flipped');
-      next.hidden = false; next.classList.add('target');
+      next.disabled = false; next.classList.add('target');
     };
-    next.onclick = () => reveal(i + 1);
+    next.onclick = () => { if (!next.disabled) reveal(i + 1); };
   }
 
-  // ---------- Night ----------
-  function nightIntro() {
+  // ---------- A round: one pass around the table ----------
+  function roundIntro() {
     render(`
       <div class="spacer"></div>
-      <div class="scene-emoji">🌙</div>
-      <h2 class="center">Night ${G.round}</h2>
-      <p class="center">Everyone, close your eyes. The phone will summon those who stir in the dark.</p>
+      <div class="scene-emoji">🕯️</div>
+      <h2 class="center">Round ${G.round}</h2>
+      <p class="center">Debate aloud. Then pass the phone around — on their turn, each player secretly acts and votes.</p>
+      <p class="center"><span class="pill">${aliveNames().length} still alive</span></p>
       <div class="spacer"></div>
-      <button class="btn" id="next">Begin the night</button>
+      <button class="btn" id="next">Pass the phone around</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => nightAssassins();
+    app.querySelector('#next').onclick = () => {
+      G.order = alivePlayers();
+      G.kills = []; G.protects = []; G.votes = [];
+      turn(0);
+    };
   }
 
-  function nightAssassins() {
-    const assassins = G.players.filter((p) => p.role === 'assassin' && p.alive).map((p) => p.name);
-    gate(assassins.join(' & '), () => {
-      const targets = G.players.filter((p) => p.alive && p.role !== 'assassin').map((p) => p.name);
+  function turn(i) {
+    if (i >= G.order.length) return resolveRound();
+    gate(G.order[i].name, () => actFor(i));
+  }
+
+  // The current player's private turn: role action (if any), then their vote.
+  function actFor(i) {
+    const p = G.order[i];
+    if (p.role === 'assassin') {
+      const targets = G.players.filter((x) => x.alive && x.role !== 'assassin').map((x) => x.name);
       chooseScene({
-        eyebrow: `Night ${G.round}`, title: 'Choose a victim',
-        sub: 'Who do the Assassins strike tonight?', list: targets,
-        onPick: (name) => { G.nightVictim = name; passBack('Assassins', nightGuardian); },
+        eyebrow: `Round ${G.round} · in secret`, title: 'Mark your victim',
+        sub: 'Strike down one of the Virtuous tonight.', list: targets,
+        onPick: (name) => { G.kills.push({ by: p.name, target: name }); voteStep(i); },
       });
-    }, { btn: 'We have the phone', sub: 'Assassins only. Everyone else, eyes shut.' });
-  }
-
-  function nightGuardian() {
-    const g = G.players.find((p) => p.role === 'guardian' && p.alive);
-    if (!g) return dawn();
-    gate(g.name, () => {
+    } else if (p.role === 'guardian') {
       chooseScene({
-        eyebrow: `Night ${G.round}`, title: 'Choose who to protect',
-        sub: 'They will survive the Assassins tonight.', list: aliveNames(),
-        onPick: (name) => { G.nightProtect = name; passBack(g.name, dawn); },
+        eyebrow: `Round ${G.round} · in secret`, title: 'Choose who to protect',
+        sub: 'They survive any assassination this round.', list: aliveNames(),
+        onPick: (name) => { G.protects.push({ by: p.name, target: name }); voteStep(i); },
       });
-    }, { sub: 'Guardian only. Everyone else, eyes shut.' });
-  }
-
-  // "Close your eyes, pass it back" interstitial between secret turns.
-  function passBack(who, then) {
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">🌙</div>
-      <h2 class="center">Eyes shut, ${esc(who)}</h2>
-      <p class="center">Pass the phone back to the table.</p>
-      <div class="spacer"></div>
-      <button class="btn" id="next">Continue</button>
-    `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => then();
-  }
-
-  function dawn() {
-    const saved = G.nightVictim && G.nightVictim === G.nightProtect;
-    let deadName = null;
-    if (!saved && G.nightVictim) {
-      const v = G.players.find((p) => p.name === G.nightVictim);
-      if (v) { v.alive = false; deadName = v.name; }
-    }
-    G.nightVictim = null; G.nightProtect = null;
-
-    let body;
-    if (saved) {
-      body = `<p class="center">A blade flashed in the night… but the Guardian made a save.
-        <strong style="color:var(--green)">Everyone survived.</strong></p>`;
-    } else if (deadName) {
-      const v = G.players.find((p) => p.name === deadName);
-      body = `<p class="center">${gAvatar(deadName)} <strong>${esc(deadName)}</strong> was found eliminated.</p>
-        <p class="center">${esc(deadName)} was ${roleWord(v.role)}.</p>`;
     } else {
-      body = `<p class="center">The night passed quietly. No one was harmed.</p>`;
+      voteStep(i);
     }
-    const w = Engine.winner(G.players);
+  }
+
+  function voteStep(i) {
+    const p = G.order[i];
+    const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
+    chooseScene({
+      eyebrow: `Round ${G.round} · your vote`, title: `${p.name}, who do you banish?`,
+      sub: 'This vote is yours alone.', list: options, skipLabel: 'Abstain',
+      onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); turn(i + 1); },
+    });
+  }
+
+  // ---------- Resolution ----------
+  function resolveRound() {
+    const plan = Engine.resolveRound({ players: G.players, kills: G.kills, protects: G.protects, votes: G.votes });
+    // Apply the deaths the plan decided (banishment always; assassination only if it landed).
+    if (plan.banished) { const p = G.players.find((x) => x.name === plan.banished); if (p) p.alive = false; }
+    if (plan.outcome === 'killed') { const p = G.players.find((x) => x.name === plan.victim); if (p) p.alive = false; }
+    G.res = plan;
+    return G.settings.suspense ? voteRevealPublic(0) : showBanish();
+  }
+
+  // Public, narrator-style reveal of every ballot (no passing — everyone watches).
+  function voteRevealPublic(i) {
+    if (i >= G.votes.length) return showBanish();
+    const { voter, choice } = G.votes[i];
+    const last = i + 1 >= G.votes.length;
+    render(`
+      <div class="spacer"></div>
+      <p class="eyebrow center">Votes · ${i + 1} of ${G.votes.length}</p>
+      <div class="vote-line">${gAvatar(voter)}<span>${esc(voter)}</span></div>
+      <div class="vote-arrow center">${choice ? 'voted to banish' : 'abstained'}</div>
+      ${choice ? `<div class="vote-line"><span class="vote-choice">${esc(choice)}</span>${gAvatar(choice)}</div>` : ''}
+      <div class="spacer"></div>
+      <button class="btn" id="next">${last ? 'Tally the votes' : 'Next vote'}</button>
+    `, { targetSelector: '#next' });
+    app.querySelector('#next').onclick = () => voteRevealPublic(i + 1);
+  }
+
+  function showBanish() {
+    const r = G.res;
+    let body;
+    if (!r.banished) {
+      body = `<p class="center">${r.bVotes === 0 ? 'No votes were cast.' : 'The vote was tied.'} No one is banished.</p>`;
+    } else {
+      body = `<p class="center">${gAvatar(r.banished)} <strong>${esc(r.banished)}</strong> is banished with ${r.bVotes} vote${r.bVotes > 1 ? 's' : ''}.</p>
+        <p class="center">${esc(r.banished)} was ${roleWord(r.bRole)}.</p>`;
+    }
+    // If banishing ended the game (e.g. the last Assassin is caught), the strike never lands.
+    const cancelled = r.winAfterBanish && r.bRole === 'assassin';
+    render(`
+      <div class="spacer"></div>
+      <div class="scene-emoji">⚖️</div>
+      <h2 class="center">The vote is in</h2>
+      ${body}
+      ${cancelled ? `<p class="center">With the last Assassin caught, their strike never lands.</p>` : ''}
+      <div class="spacer"></div>
+      <button class="btn" id="next">${r.winAfterBanish ? 'See the outcome' : 'Then, under cover of dark…'}</button>
+    `, { targetSelector: '#next' });
+    app.querySelector('#next').onclick = () => (r.winAfterBanish ? win(r.winner) : resolveAssassination());
+  }
+
+  function resolveAssassination() {
+    const r = G.res;
+    let body;
+    if (r.outcome === 'none') {
+      body = `<p class="center">No blade finds its mark. The night passes without bloodshed.</p>`;
+    } else if (r.outcome === 'already') {
+      body = `<p class="center">The Assassins crept toward ${esc(r.victim)}… but justice had already claimed them.</p>`;
+    } else if (r.outcome === 'saved') {
+      body = `<p class="center">A blade flashed at ${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong>…
+        but the Guardian’s shield held. <strong style="color:var(--green)">They survive.</strong></p>`;
+    } else { // killed
+      body = `<p class="center">${gAvatar(r.victim)} <strong>${esc(r.victim)}</strong> was found slain.</p>
+        <p class="center">${esc(r.victim)} was ${roleWord(r.victimRole)}.</p>`;
+    }
+    const w = r.winner;
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">🌅</div>
       <h2 class="center">Dawn breaks</h2>
       ${body}
-      <div class="spacer"></div>
-      <button class="btn" id="next">${w ? 'See the outcome' : 'To the round table'}</button>
-    `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => (w ? win(w) : dayIntro());
-  }
-
-  // ---------- Day ----------
-  function dayIntro() {
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">🗣️</div>
-      <h2 class="center">The round table</h2>
-      <p class="center">Debate aloud. When you’re ready, everyone casts a secret vote to banish one suspect.</p>
-      <p class="center"><span class="pill">${aliveNames().length} still alive</span></p>
-      <div class="spacer"></div>
-      <button class="btn" id="next">Begin voting</button>
-    `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => { G.voters = aliveNames(); G.votes = []; vote(0); };
-  }
-
-  function vote(i) {
-    if (i >= G.voters.length) return G.settings.suspense ? voteReveal(0) : resolveDay();
-    const voter = G.voters[i];
-    gate(voter, () => {
-      const options = G.players.filter((p) => p.alive && p.name !== voter).map((p) => p.name);
-      chooseScene({
-        eyebrow: `Ballot ${i + 1} of ${G.voters.length}`, title: `${voter}, who do you banish?`,
-        list: options, skipLabel: 'Abstain',
-        onPick: (name) => { G.votes.push({ voter, choice: name }); vote(i + 1); },
-      });
-    }, { sub: 'Your vote is secret.' });
-  }
-
-  function voteReveal(i) {
-    if (i >= G.votes.length) return resolveDay();
-    gate(G.votes[i].voter, () => voteRevealCard(i));
-  }
-
-  function voteRevealCard(i) {
-    const { voter, choice } = G.votes[i];
-    const last = i + 1 >= G.votes.length;
-    const nextLabel = last ? 'Tally the votes' : 'Next ballot';
-    render(`
-      <p class="eyebrow center" style="margin-top:6px">Reveal ${i + 1} of ${G.votes.length}</p>
-      <h2 class="center">${esc(voter)}’s vote</h2>
-      <div class="reveal">
-        <div class="flip vote" id="flip">
-          <div class="face back"><div class="glyph">🤫</div><div class="role-name">Tap to reveal</div></div>
-          <div class="face front">
-            <div class="vote-line">${gAvatar(voter)}<span>${esc(voter)}</span></div>
-            <div class="vote-arrow">${choice ? 'votes to banish' : 'abstained'}</div>
-            ${choice ? `<div class="vote-line"><span class="vote-choice">${esc(choice)}</span>${gAvatar(choice)}</div>` : ''}
-          </div>
-        </div>
-      </div>
-      <button class="btn" id="next" hidden>${nextLabel}</button>
-    `, { targetSelector: '#flip' });
-
-    const flip = app.querySelector('#flip');
-    const next = app.querySelector('#next');
-    flip.onclick = () => {
-      if (flip.classList.contains('flipped')) return;
-      flip.classList.add('flipped');
-      next.hidden = false; next.classList.add('target');
-    };
-    next.onclick = () => voteReveal(i + 1);
-  }
-
-  function resolveDay() {
-    const t = Engine.tally(G.votes.map((v) => v.choice));
-    if (t.tie) {
-      render(`
-        <div class="spacer"></div>
-        <div class="scene-emoji">⚖️</div>
-        <h2 class="center">${t.max === 0 ? 'No votes were cast' : 'The vote is tied'}</h2>
-        <p class="center">No one is banished today. Night falls again.</p>
-        <div class="spacer"></div>
-        <button class="btn" id="next">To nightfall</button>
-      `, { targetSelector: '#next' });
-      app.querySelector('#next').onclick = () => { G.round++; nightIntro(); };
-      return;
-    }
-    const name = t.leaders[0];
-    const p = G.players.find((x) => x.name === name);
-    p.alive = false;
-    const w = Engine.winner(G.players);
-    render(`
-      <div class="spacer"></div>
-      <div class="scene-emoji">⚖️</div>
-      <h2 class="center">The vote is in</h2>
-      <p class="center">${gAvatar(name)} <strong>${esc(name)}</strong> is banished with ${t.max} vote${t.max > 1 ? 's' : ''}.</p>
-      <p class="center">${esc(name)} was ${roleWord(p.role)}.</p>
       <div class="spacer"></div>
       <button class="btn" id="next">${w ? 'See the outcome' : 'Continue'}</button>
     `, { targetSelector: '#next' });
@@ -331,7 +296,7 @@
 
   function roundSummary() {
     const alive = aliveNames().length;
-    const assassins = G.players.filter((p) => p.role === 'assassin' && p.alive).length;
+    const assassins = aliveAssassins();
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">🔎</div>
@@ -340,9 +305,9 @@
       <p class="center"><strong style="color:var(--red)">${assassins} Assassin${assassins > 1 ? 's' : ''}</strong>
         still hide among you.</p>
       <div class="spacer"></div>
-      <button class="btn" id="next">To nightfall</button>
+      <button class="btn" id="next">Begin the next round</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => { G.round++; nightIntro(); };
+    app.querySelector('#next').onclick = () => { G.round++; roundIntro(); };
   }
 
   function win(team) {

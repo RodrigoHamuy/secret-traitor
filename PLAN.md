@@ -32,22 +32,23 @@ Assassin is caught; the Assassins win when they equal or outnumber everyone else
 
 ### 🍷 Virtuous
 An ordinary, innocent member of the group, with no special power.
-- **Goal:** work out who the Assassins are and vote them out during the day.
-- **At night:** sleeps (no action).
+- **Goal:** work out who the Assassins are and vote them out.
+- **On their turn:** just cast a vote (no special action).
 - The Virtuous are the majority and win by deduction, debate, and voting.
 
 ### 🗡️ Assassin
 A secret traitor hiding among the Virtuous. (There may be more than one; they know each
 other.)
 - **Goal:** eliminate the Virtuous until the Assassins equal or outnumber everyone else.
-- **At night:** the Assassins privately agree on **one person to eliminate**.
-- By day they pose as one of the Virtuous, deflecting suspicion.
+- **On their turn:** secretly mark **one victim**, then vote like everyone else. If there
+  are two Assassins, their marks are tallied — they must agree on a target to land a kill.
+- They pose as Virtuous, deflecting suspicion.
 
 ### 🛡️ Guardian
 One of the Virtuous, sworn to protect the innocent.
 - **Goal:** same as the Virtuous — catch the Assassins.
-- **At night:** privately chooses **one person to protect**. If the Assassins target
-  that person this night, the strike fails and **no one dies**.
+- **On their turn:** secretly chooses **one person to protect**, then votes. If the
+  Assassins strike that person this round, the strike fails and **no one dies**.
 - The Guardian may be allowed to protect themselves (a setting we can tune later).
 
 **Suggested role counts** (starting point, to balance during playtesting):
@@ -63,24 +64,28 @@ One of the Virtuous, sworn to protect the innocent.
 
 ## 3. How a round works
 
-Each round is one **Night** followed by one **Day**.
+On one shared phone there is **no separate night and day** — coordinating "everyone
+close your eyes" while also passing a phone around is fiddly, and naming whose turn it is
+("pass to the Assassins") would leak roles. Instead each round is **one pass around the
+table**, and every action — assassinate, protect, vote — happens on a player's own private
+turn. Because everyone takes the phone in turn order and the prompt only ever says
+"Pass the phone to *X*", identities stay hidden.
 
-### 🌙 Night
-1. Everyone "goes to sleep" — phones show a neutral waiting screen.
-2. **Assassins** secretly pick one person to eliminate.
-3. **Guardian** secretly picks one person to protect.
-4. **The Virtuous** simply wait for night to end.
+### 🕯️ The pass (each player, in turn, behind the "I'm X" gate)
+- **Assassin** → secretly marks a victim, **then** casts their vote *(2 selections)*.
+- **Guardian** → secretly picks someone to protect, **then** votes *(2 selections)*.
+- **Virtuous** → just votes *(1 selection)*.
 
-### ☀️ Dawn
-- If the Assassins' target was the same person the Guardian protected → **the strike
-  fails, nobody dies.**
-- Otherwise → that person is **eliminated** and their role is revealed to everyone.
-
-### 🗣️ Day
-1. The survivors debate who they suspect.
-2. Everyone **votes** to eliminate one person.
-3. The person with the most votes is **eliminated** and their role is revealed.
-   *(Tie-handling is an open question — see §6.)*
+### ⚖️ Resolution (after the pass)
+1. **Tally the votes** → the player with the most votes is **banished** and their role is
+   revealed. *(A tie or no votes = nobody is banished.)*
+2. **Cancellations:**
+   - A **banished Assassin's** mark is **cancelled**. If that was the **last Assassin**,
+     the game is already over (Virtuous win) and the strike never lands.
+   - A **banished Guardian's** shield is **cancelled** — but play continues.
+3. **The strike lands.** Surviving Assassins' marks are tallied into one victim, who is
+   **slain unless an active Guardian protected them** (then the strike fails and nobody
+   dies). The victim's role is revealed.
 
 Then a new round begins, unless someone has already won.
 
