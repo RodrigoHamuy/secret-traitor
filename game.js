@@ -596,7 +596,7 @@
       clearInterval(iv);
       // Resume beside whoever last held the phone (the player just revealed).
       G.order = aliveOrderFrom(G.lastHolder);
-      G.kills = []; G.protects = []; G.votes = []; G.revoted = false;
+      G.kills = []; G.protects = []; G.votes = []; G.revoted = false; G.runoff = null;
       turn(0);
     };
   }
@@ -646,26 +646,27 @@
   // their action step. `steps` shows the 2-step hint (omitted for plain Virtuous).
   function voteStep(i, next = (j) => turn(j), steps = null) {
     const p = G.order[i];
-    const options = G.players.filter((x) => x.alive && x.name !== p.name).map((x) => x.name);
+    // On a re-vote the choice is restricted to the players who were tied (the runoff).
+    const pool = (G.revoted && G.runoff && G.runoff.length) ? G.runoff : aliveNames();
+    const options = pool.filter((n) => n !== p.name);
     chooseScene({
       steps,
       emoji: '🗳️', eyebrow: `Round ${G.round}${G.revoted ? ' · RE-VOTE' : ''} · VOTE`, tint: 'vote',
       title: `${p.name}, who do you vote to banish?`,
-      sub: 'You only cast a vote — whoever the majority picks is banished.', list: options, cta: 'Cast vote', ctaEmoji: '🗳️',
+      sub: G.revoted ? 'Runoff — vote only between the tied players.'
+        : 'You only cast a vote — whoever the majority picks is banished.',
+      list: options, cta: 'Cast vote', ctaEmoji: '🗳️',
       onPick: (name) => { G.votes.push({ voter: p.name, choice: name }); next(i + 1); },
     });
   }
 
   // ---------- Resolution ----------
-  // Draws aren't allowed. On a first split vote the table debates and votes again;
-  // a second split is broken by a random banishment (forceBanish on the re-vote).
+  // Draws aren't allowed. On a first split vote the table debates and votes again
+  // (a runoff between the tied players); a second split is broken by a random
+  // banishment (forceBanish on the re-vote).
   function resolveRound() {
     const plan = Engine.resolveRound({ players: G.players, kills: G.kills,
       protects: G.protects, votes: G.votes, forceBanish: G.revoted });
-    // First-round split with at least one vote cast: deadlock -> re-vote.
-    if (!plan.banished && !G.revoted && G.votes.some((v) => v.choice)) {
-      return deadlockIntro();
-    }
     // Deaths are NOT applied yet — players stay coloured through the vote reveal.
     // Each elimination is committed at its own reveal (showBanish / dawn), where the
     // portrait animates from colour to grey. See markDead().
@@ -673,17 +674,28 @@
     return revealVotesIntro();
   }
 
+  // Decided only AFTER every ballot has been revealed, so the reveal isn't spoiled:
+  // a first-round split sends the tied players to a runoff; otherwise, the verdict.
+  function afterVoteReveal() {
+    if (!G.res.banished && !G.revoted && G.votes.some((v) => v.choice)) {
+      return deadlockIntro();
+    }
+    return showBanish();
+  }
+
   // The first vote tied. Announce the deadlock, let the table debate again, then
-  // re-collect everyone's vote (kills/protects already chosen this round stand).
+  // re-collect everyone's vote — but only between the tied players (the runoff).
   function deadlockIntro() {
     G.revoted = true;
+    G.runoff = Engine.tally(G.votes.map((v) => v.choice)).leaders.slice();
     G.order = aliveOrderFrom(G.lastHolder);
     G.votes = [];
+    const tied = G.runoff.map((n) => `<strong>${esc(n)}</strong>`).join(' & ');
     render(`
       <div class="spacer"></div>
       <div class="scene-emoji">⚖️</div>
       <h2 class="center">The vote is deadlocked</h2>
-      <p class="center">No one has a majority. Debate once more — then pass the phone around to vote again.</p>
+      <p class="center">${tied} are tied. Debate once more, then vote again — only between them.</p>
       <p class="center"><span class="pill">If it's still a tie, fate decides</span></p>
       <div class="spacer"></div>
       <button class="btn" id="next">Vote again</button>
@@ -723,15 +735,15 @@
       <h2 class="center">Who voted for whom</h2>
       <div class="vote-list">${rows}</div>
       <div class="spacer"></div>
-      <button class="btn" id="next">See the verdict</button>
+      <button class="btn" id="next">See the result</button>
     `, { targetSelector: '#next' });
-    app.querySelector('#next').onclick = () => showBanish();
+    app.querySelector('#next').onclick = () => afterVoteReveal();
   }
 
   // Card pass-around: hand the phone to each voter, who flips their own ballot
   // to reveal it to the table — just like the secret-role reveal at the start.
   function ballotReveal(i) {
-    if (i >= G.votes.length) return showBanish();
+    if (i >= G.votes.length) return afterVoteReveal();
     gate(G.votes[i].voter, () => ballotCard(i));
   }
 
@@ -750,7 +762,7 @@
           </div>
         </div>
       </div>
-      <button class="btn" id="next" disabled>${last ? 'See the verdict' : 'Show everyone, then pass on'}</button>
+      <button class="btn" id="next" disabled>${last ? 'See the result' : 'Show everyone, then pass on'}</button>
     `, { targetSelector: '#flip' });
     const flip = app.querySelector('#flip');
     const next = app.querySelector('#next');
