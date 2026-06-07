@@ -56,6 +56,23 @@ Actions**:
 After the first run, the workflow log prints the deployed URL
 (`https://secret-traitor-replicate.<your-subdomain>.workers.dev`).
 
+### Per-PR preview deployments
+
+Two extra workflows give every pull request a fully self-contained, throwaway preview —
+deployed as **fresh, PR-named Workers** rather than Cloudflare's built-in version previews:
+
+- [`pr-preview-deploy.yml`](../.github/workflows/pr-preview-deploy.yml) (on `pull_request`)
+  deploys both a backend Worker (`secret-traitor-be-pr-<N>`, this `worker/` proxy) and a
+  frontend Worker (`secret-traitor-fe-pr-<N>`, the static site as an assets-only Worker with
+  `PORTRAIT_PROXY_URL` rewritten to that PR's backend). New commits redeploy the same two
+  Workers, and the run posts/updates a comment with both `*.workers.dev` URLs.
+- [`pr-preview-cleanup.yml`](../.github/workflows/pr-preview-cleanup.yml) (on
+  `pull_request_target` `closed`) deletes both Workers via the Cloudflare API when the PR is
+  closed or merged.
+
+Both reuse the same `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` (and optional
+`REPLICATE_API_TOKEN`) repository secrets listed above.
+
 ### Option B — Manual
 
 1. Install Wrangler and log in to Cloudflare:
