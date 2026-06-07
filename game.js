@@ -139,7 +139,9 @@
   }
   // Commit an elimination (deferred from resolveRound so the portrait stays coloured
   // through the vote reveal, then animates to grey at its own reveal screen).
-  const markDead = (name, fate) => { const p = G.players.find((x) => x.name === name); if (p) { p.alive = false; p.fate = fate; } };
+  // `deathOrder` is a monotonic counter so the final screen can list the fallen newest-first.
+  let deathSeq = 0;
+  const markDead = (name, fate) => { const p = G.players.find((x) => x.name === name); if (p) { p.alive = false; p.fate = fate; p.deathOrder = ++deathSeq; } };
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
@@ -891,11 +893,24 @@
     const v = team === 'virtuous';
     // The winning team: everyone who isn't an Assassin if the Virtuous won, else the Assassins.
     const isWinner = (p) => (v ? p.role !== 'assassin' : p.role === 'assassin');
-    const roster = G.players.map((p) => `
-      <div class="seat${isWinner(p) ? ' winner' : ''}">
+    const isAssassin = (p) => p.role === 'assassin';
+    // Display order: winners first, then any assassin not already shown as a winner,
+    // then the rest ordered by how they fell — most recent death first, then the living.
+    const sorted = G.players.slice().sort((a, b) => {
+      const rank = (p) => isWinner(p) ? 0 : isAssassin(p) ? 1 : 2;
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
+      // Within "the rest": newest death first; surviving non-winners (no deathOrder) last.
+      const da = a.deathOrder || 0, db = b.deathOrder || 0;
+      return db - da;
+    });
+    // Per-player tint, mirroring the selection screens: gold for winners, red for the
+    // assassinated, dark for the banished, blue (shield) is not used here.
+    const tintOf = (p) => isWinner(p) ? 'win' : p.fate === 'killed' ? 'kill' : p.fate === 'banished' ? 'vote' : '';
+    const roster = sorted.map((p) => `
+      <div class="pick selected pick-tint-${tintOf(p) || 'none'}">
         ${gAvatar(p.name)}
-        <span class="name">${esc(p.name)}</span>
-        ${isWinner(p) ? '<span class="crown">👑</span>' : ''}
+        <span class="name">${esc(p.name)}${isWinner(p) ? ' 👑' : ''}</span>
         <span class="role-tag" style="color:${roleColor(p.role)}">${ROLE_INFO[p.role].label}</span>
       </div>`).join('');
     render(`
@@ -904,7 +919,7 @@
       <h1 class="center" style="color:${v ? 'var(--green)' : 'var(--red)'};font-size:30px">
         ${v ? 'THE VIRTUOUS WIN' : 'THE ASSASSINS WIN'}</h1>
       <p class="center">${v ? 'Every Assassin has been brought to justice.' : 'The Assassins now rule. Trust no one.'}</p>
-      <div class="reveal-roles">${roster}</div>
+      <div class="pick-grid">${roster}</div>
       <div class="spacer"></div>
       <button class="btn" id="again">Play Again</button>
     `, { targetSelector: '#again' });
