@@ -172,8 +172,8 @@ The demo lives as plain static files (just open it in a browser; trivial to host
 
 ## 7. Milestones
 
-1. ✅ **M1 — Demo:** static, clickable happy-path that highlights each tap. *(Kept as a
-   "Demo mode" toggle on the title screen for teaching the game.)*
+1. ✅ **M1 — Demo:** static, clickable happy-path that highlighted each tap. *(Served its
+   purpose as an early prototype and has since been removed — the real game stands alone.)*
 2. ✅ **M2 — Single-device game (one shared phone):** real, fully playable pass-&-play
    game — setup & role dealing, secret role reveal, narrated night (Assassins + Guardian),
    dawn resolution, secret day vote with optional suspense reveal, and win detection.

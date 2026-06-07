@@ -4,15 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0c0805" />
-  <title>Secret Traitor — Demo</title>
+  <title>Secret Traitor</title>
 
   <!-- Period typography: engraved Roman capitals + Garamond body -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet" />
-
-  <!-- Client-side QR generation (no build step) -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 
   <link rel="stylesheet" href="app.css" />
 
@@ -20,17 +17,17 @@
   <script src="engine.js"></script>
 </head>
 <body>
-  <!-- Phone frame keeps the demo feeling like a mobile app on desktop too -->
+  <!-- Phone frame keeps it feeling like a mobile app on desktop too -->
   <div class="phone">
     <main id="app" class="app"><!-- scenes render here --></main>
-    <!-- Instructional banner: tells the user what to tap at each step -->
+    <!-- Instructional banner (used by the title only; hidden during play) -->
     <div id="hint" class="hint" hidden>
       <span class="hint-finger">☞</span>
       <span id="hint-text" class="hint-text"></span>
     </div>
   </div>
 
-  <!-- app.js: shared UI helpers + scripted demo · game.js: the real single-device game -->
+  <!-- app.js: shared UI shell + title · game.js: the single-device game -->
   <script src="app.js"></script>
   <script src="game.js"></script>
 </body>
