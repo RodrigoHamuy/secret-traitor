@@ -388,7 +388,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .hourglass .bulb.bottom .sand { height: 0;    animation: hg-fill  var(--dur,60s) linear forwards; }
 @keyframes hg-drain { from { height: 100%; } to { height: 0; } }
 @keyframes hg-fill  { from { height: 0; }    to { height: 100%; } }
-.hourglass::after { content: ""; position: absolute; top: 50%; left: 50%;
+.hourglass::after { content: ""; position: absolute; top: calc(50% + 10px); left: 50%;
   transform: translate(-50%, -50%); width: 2px; height: 20px;
   background: linear-gradient(#e8c873, rgba(232,200,115,0)); animation: hg-stream .6s linear infinite; }
 @keyframes hg-stream { 0%,100% { opacity: .25; } 50% { opacity: .9; } }
