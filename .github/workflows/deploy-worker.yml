@@ -1,12 +1,15 @@
 name: Deploy Replicate proxy Worker
 
 # Deploys the optional Cloudflare Worker in worker/ that proxies period-portrait
-# requests to Replicate (see worker/README.md). The Worker holds no secrets — the
-# Cloudflare credentials below are only used to publish it.
+# requests to Replicate (see worker/README.md). The Cloudflare credentials below
+# are used to publish it; REPLICATE_API_TOKEN is uploaded as a Worker secret so the
+# Worker can fall back to it when a caller doesn't bring their own token.
 #
 # Required GitHub repository secrets:
 #   CLOUDFLARE_API_TOKEN   — a Cloudflare API token with the "Edit Cloudflare Workers" permission.
 #   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID.
+#   REPLICATE_API_TOKEN    — a Replicate API token used as the Worker's fallback (optional;
+#                            if unset, the Worker only works for callers who bring their own).
 
 on:
   push:
@@ -37,3 +40,9 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: worker
+          # Uploaded to the Worker as a secret binding (wrangler secret put) so the
+          # proxy can fall back to it when a caller sends no X-Replicate-Token.
+          secrets: |
+            REPLICATE_API_TOKEN
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}

@@ -29,7 +29,9 @@ header is passed through, so the client can use `Prefer: wait` for a one-shot re
 ## Privacy
 
 - **The Worker stores nothing.** The token arrives per request in a header and is used only
-  to forward that single call. No secrets are baked into the Worker.
+  to forward that single call. The one optional exception is the `REPLICATE_API_TOKEN`
+  fallback secret (see Deploy) — if you set it, anonymous callers spend *your* Replicate
+  credits, so pair it with an origin allowlist.
 - **Replicate auto-deletes** all prediction inputs, outputs, and logs within ~1 hour by
   default ([data-retention docs](https://replicate.com/docs/topics/predictions/data-retention)).
 - PuLID runs on Replicate's own GPUs (not relayed to a third party), and Replicate
@@ -47,6 +49,9 @@ Actions**:
 
 - `CLOUDFLARE_API_TOKEN` — a Cloudflare API token with the **Edit Cloudflare Workers** permission.
 - `CLOUDFLARE_ACCOUNT_ID` — your Cloudflare account ID (Workers & Pages → Account details).
+- `REPLICATE_API_TOKEN` *(optional)* — a Replicate token the Worker uses as a fallback when a
+  caller sends no `X-Replicate-Token`. The workflow uploads it as a Worker secret. Leave it
+  unset to keep the Worker strictly bring-your-own-token.
 
 After the first run, the workflow log prints the deployed URL
 (`https://secret-traitor-replicate.<your-subdomain>.workers.dev`).
@@ -63,15 +68,20 @@ After the first run, the workflow log prints the deployed URL
    wrangler deploy
    ```
    Wrangler prints a URL like `https://secret-traitor-replicate.<your-subdomain>.workers.dev`.
+3. *(Optional)* Set the fallback token used when a caller sends none:
+   ```sh
+   wrangler secret put REPLICATE_API_TOKEN
+   ```
 
 ### After deploying (either option)
 
 Put the printed URL in [`game.js`](../game.js) as `PORTRAIT_PROXY_URL`.
 
-> **CORS is open (`*`).** Any origin may call the Worker. That's fine because it holds no
-> secrets — every request must carry the caller's *own* Replicate token, so an open policy
-> just means "anyone with their own token can use it." If request volume ever becomes a
-> concern, restrict it with an origin allowlist in [`replicate-proxy.js`](./replicate-proxy.js).
+> **CORS is open (`*`).** Any origin may call the Worker. With bring-your-own-token only,
+> that just means "anyone with their own token can use it." **But if you set the
+> `REPLICATE_API_TOKEN` fallback, anonymous callers spend your credits** — add an origin
+> allowlist (and/or rate limiting) in [`replicate-proxy.js`](./replicate-proxy.js) before
+> exposing it publicly.
 
 ## How a player uses it
 

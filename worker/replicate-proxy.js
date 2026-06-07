@@ -15,15 +15,17 @@
  *   GET   {proxy}/v1/predictions/{id}           GET   https://api.replicate.com/v1/predictions/{id}
  *   POST  {proxy}/v1/models/{owner}/{name}/predictions  -> same path on api.replicate.com
  *
- * The token NEVER lives in the Worker. It arrives per-request from the caller in the
- * `X-Replicate-Token` header (preferred) or a standard `Authorization: Bearer …`
- * header, and is used only for that one forwarded call. Replicate itself auto-deletes
- * prediction inputs/outputs within ~1 hour.
+ * The caller's token arrives per-request in the `X-Replicate-Token` header (preferred)
+ * or a standard `Authorization: Bearer …` header, and is used only for that one
+ * forwarded call. If the caller sends NO token, the Worker falls back to the optional
+ * REPLICATE_API_TOKEN secret binding (set via `wrangler secret put` / the deploy
+ * workflow). Replicate itself auto-deletes prediction inputs/outputs within ~1 hour.
  *
  * Security note: because this forwards anything, anyone can drive any Replicate API
- * call through it — but only ever with their OWN token, which they must supply. The
- * Worker holds no secrets, so an open proxy just means "bring your own key." If abuse
- * volume ever matters, add an Origin allowlist or rate limiting below.
+ * call through it. With a caller-supplied token that's just "bring your own key." But
+ * if REPLICATE_API_TOKEN is configured, an anonymous caller spends YOUR Replicate
+ * credits — so if you set the fallback secret, also add an Origin allowlist or rate
+ * limiting below before exposing the Worker publicly.
  *
  * Deploy with `wrangler deploy` (see README.md), then set PORTRAIT_PROXY_URL in
  * game.js to the resulting *.workers.dev URL.
@@ -44,7 +46,7 @@ function corsHeaders(request) {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const cors = corsHeaders(request);
 
     if (request.method === 'OPTIONS') {
@@ -52,7 +54,10 @@ export default {
     }
 
     // The caller's token: X-Replicate-Token, or a passed-through Authorization header.
-    const auth = request.headers.get('X-Replicate-Token') || request.headers.get('Authorization');
+    // If the caller brings none, fall back to the Worker's REPLICATE_API_TOKEN secret.
+    const auth = request.headers.get('X-Replicate-Token')
+      || request.headers.get('Authorization')
+      || (env && env.REPLICATE_API_TOKEN);
     if (!auth) {
       return json({ error: 'Missing Replicate token (send X-Replicate-Token or Authorization)' }, 401, cors);
     }
