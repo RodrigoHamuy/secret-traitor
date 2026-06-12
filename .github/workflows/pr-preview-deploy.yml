@@ -1,0 +1,117 @@
+name: PR preview deploy
+
+# Deploys a full, self-contained preview of a pull request as TWO fresh Cloudflare
+# Workers — one for the backend (the Replicate proxy in worker/) and one for the
+# frontend (the static site served as an assets-only Worker). We deliberately do NOT
+# use Cloudflare's built-in "preview"/versioned deployments (too limiting); instead
+# each PR gets its own dedicated, uniquely-named Workers:
+#
+#   backend   -> secret-traitor-be-pr-<N>.<subdomain>.workers.dev
+#   frontend  -> secret-traitor-fe-pr-<N>.<subdomain>.workers.dev
+#
+# New commits on the same PR redeploy (overwrite) the same two Workers. The matching
+# pr-preview-cleanup.yml workflow deletes both Workers when the PR is closed.
+#
+# Required GitHub repository secrets (same ones the prod deploy-worker.yml uses):
+#   CLOUDFLARE_API_TOKEN   — token with the "Edit Cloudflare Workers" permission.
+#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID.
+#   REPLICATE_API_TOKEN    — optional Replicate fallback token uploaded to the backend
+#                            Worker as a secret (see worker/README.md).
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write   # to post the sticky preview-URL comment
+
+# One deploy per PR at a time; a newer commit supersedes an in-progress run.
+concurrency:
+  group: pr-preview-${{ github.event.number }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute Worker names
+        id: names
+        run: |
+          echo "backend=secret-traitor-be-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+          echo "frontend=secret-traitor-fe-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+
+      # Rewrite the Worker name in worker/wrangler.toml so this PR deploys to its own
+      # dedicated Worker (and so the REPLICATE_API_TOKEN secret lands on the right one).
+      - name: Name the backend Worker for this PR
+        run: |
+          sed -i "s/^name = .*/name = \"${{ steps.names.outputs.backend }}\"/" worker/wrangler.toml
+
+      - name: Deploy backend Worker
+        id: backend
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: worker
+          # Uploaded as a Worker secret so the proxy can fall back to it when a caller
+          # sends no X-Replicate-Token (mirrors the production deploy-worker.yml).
+          secrets: |
+            REPLICATE_API_TOKEN
+        env:
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+
+      # Stage the static site into an assets-only Worker, pointing PORTRAIT_PROXY_URL
+      # at THIS PR's backend so the preview is fully self-contained.
+      - name: Stage frontend
+        run: |
+          mkdir -p fe-preview/public
+          cp index.html app.css app.js engine.js game.js fe-preview/public/
+          sed -i "s#const PORTRAIT_PROXY_URL = '[^']*'#const PORTRAIT_PROXY_URL = '${{ steps.backend.outputs.deployment-url }}'#" fe-preview/public/game.js
+          cat > fe-preview/wrangler.toml <<EOF
+          name = "${{ steps.names.outputs.frontend }}"
+          compatibility_date = "2024-11-01"
+
+          [assets]
+          directory = "./public"
+          EOF
+
+      - name: Deploy frontend Worker
+        id: frontend
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: fe-preview
+
+      - name: Comment preview URLs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- pr-preview-urls -->';
+            const fe = '${{ steps.frontend.outputs.deployment-url }}';
+            const be = '${{ steps.backend.outputs.deployment-url }}';
+            const body = [
+              marker,
+              '### 🔭 PR preview deployed',
+              '',
+              `| | URL |`,
+              `| --- | --- |`,
+              `| 🎮 Frontend | ${fe} |`,
+              `| 🛰️ Backend (Replicate proxy) | ${be} |`,
+              '',
+              `Updated for commit ${context.sha.slice(0, 7)}. These Workers are deleted automatically when the PR is closed.`,
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
