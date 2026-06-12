@@ -1,16 +1,19 @@
 name: PR preview deploy
 
-# Deploys a full, self-contained preview of a pull request as TWO fresh Cloudflare
-# Workers — one for the backend (the Replicate proxy in worker/) and one for the
-# frontend (the static site served as an assets-only Worker). We deliberately do NOT
-# use Cloudflare's built-in "preview"/versioned deployments (too limiting); instead
-# each PR gets its own dedicated, uniquely-named Workers:
+# Deploys a full, self-contained preview of a pull request as THREE fresh Cloudflare
+# Workers — one for the backend (the Replicate proxy in worker/), one for the
+# frontend (the static site served as an assets-only Worker), and one for Storybook
+# (built from frontend/). We deliberately do NOT use Cloudflare's built-in
+# "preview"/versioned deployments (too limiting); instead each PR gets its own
+# dedicated, uniquely-named Workers:
 #
 #   backend   -> secret-traitor-be-pr-<N>.<subdomain>.workers.dev
 #   frontend  -> secret-traitor-fe-pr-<N>.<subdomain>.workers.dev
+#   storybook -> secret-traitor-sb-pr-<N>.<subdomain>.workers.dev
 #
-# New commits on the same PR redeploy (overwrite) the same two Workers. The matching
-# pr-preview-cleanup.yml workflow deletes both Workers when the PR is closed.
+# New commits on the same PR redeploy (overwrite) the same Workers. The matching
+# pr-preview-cleanup.yml workflow deletes all of them when the PR is closed.
+# Storybook is PR-preview only: it is deliberately never deployed on merge to main.
 #
 # Required GitHub repository secrets (same ones the prod deploy-worker.yml uses):
 #   CLOUDFLARE_API_TOKEN   — token with the "Edit Cloudflare Workers" permission.
@@ -43,6 +46,7 @@ jobs:
         run: |
           echo "backend=secret-traitor-be-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
           echo "frontend=secret-traitor-fe-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+          echo "storybook=secret-traitor-sb-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
 
       # Rewrite the Worker name in worker/wrangler.toml so this PR deploys to its own
       # dedicated Worker (and so the REPLICATE_API_TOKEN secret lands on the right one).
@@ -87,6 +91,44 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: fe-preview
 
+      # Build the Storybook from frontend/ and serve it as a third assets-only Worker.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build Storybook
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build-storybook
+
+      - name: Stage Storybook
+        run: |
+          mkdir -p sb-preview
+          cat > sb-preview/wrangler.toml <<EOF
+          name = "${{ steps.names.outputs.storybook }}"
+          compatibility_date = "2024-11-01"
+
+          [assets]
+          directory = "../frontend/storybook-static"
+          EOF
+
+      - name: Deploy Storybook Worker
+        id: storybook
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: sb-preview
+
       - name: Comment preview URLs
         uses: actions/github-script@v7
         with:
@@ -94,6 +136,7 @@ jobs:
             const marker = '<!-- pr-preview-urls -->';
             const fe = '${{ steps.frontend.outputs.deployment-url }}';
             const be = '${{ steps.backend.outputs.deployment-url }}';
+            const sb = '${{ steps.storybook.outputs.deployment-url }}';
             const body = [
               marker,
               '### 🔭 PR preview deployed',
@@ -102,6 +145,7 @@ jobs:
               `| --- | --- |`,
               `| 🎮 Frontend | ${fe} |`,
               `| 🛰️ Backend (Replicate proxy) | ${be} |`,
+              `| 📚 Storybook | ${sb} |`,
               '',
               `Updated for commit ${context.sha.slice(0, 7)}. These Workers are deleted automatically when the PR is closed.`,
             ].join('\n');

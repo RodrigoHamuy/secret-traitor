@@ -6,7 +6,7 @@ name: PR preview cleanup
 # forks, but cleanup must always be able to remove what was deployed.
 #
 # This checks out NO PR code and runs NO PR-authored scripts: it only calls the
-# Cloudflare API to delete two Workers by their deterministic names. That keeps the
+# Cloudflare API to delete the Workers by their deterministic names. That keeps the
 # privileged pull_request_target context safe from untrusted PR contributions.
 #
 # Required GitHub repository secrets:
@@ -36,7 +36,7 @@ jobs:
           PR: ${{ github.event.number }}
         run: |
           set -euo pipefail
-          for name in "secret-traitor-be-pr-$PR" "secret-traitor-fe-pr-$PR"; do
+          for name in "secret-traitor-be-pr-$PR" "secret-traitor-fe-pr-$PR" "secret-traitor-sb-pr-$PR"; do
             echo "Deleting Worker: $name"
             # ?force=true also removes it if referenced by other Workers / Durable Objects.
             code=$(curl -sS -o /tmp/resp.json -w '%{http_code}' -X DELETE \
@@ -60,6 +60,6 @@ jobs:
             const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
             const existing = comments.find(c => c.body && c.body.includes(marker));
             if (existing) {
-              const body = `${marker}\n### 🔭 PR preview removed\n\nThe frontend and backend preview Workers for this PR have been deleted.`;
+              const body = `${marker}\n### 🔭 PR preview removed\n\nThe frontend, backend and Storybook preview Workers for this PR have been deleted.`;
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
             }
