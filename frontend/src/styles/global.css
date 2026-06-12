@@ -1,0 +1,150 @@
+/* Secret Traitor design system — ported from the root static app's app.css.
+ * Theme: a candlelit chamber of intrigue. Engraved Roman capitals (Cinzel),
+ * Garamond body, parchment plaques, aged gold framing, wax-seal red. */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital@0;1&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  /* Chamber background gradient */
+  --color-chamber-from: #241a12;
+  --color-chamber-to: #0c0805;
+  /* Dark text on parchment */
+  --color-ink: #1a120a;
+  /* Aged paper */
+  --color-parch: #e9dcbf;
+  --color-parch-deep: #dccaa1;
+  --color-gold: #c9a24a;
+  --color-gold-bright: #e8c873;
+  /* Aged gold-brown border */
+  --color-line: #6b5026;
+  /* Warm parchment text on dark (was --text) */
+  --color-parchment: #ecdfc2;
+  --color-muted: #b6a071;
+  /* Role colours readable on dark */
+  --color-virtue: #9fc06f;
+  --color-blood: #c8533f;
+  --color-shield: #3f6fb0;
+  /* Role colours on parchment */
+  --color-virtue-ink: #4f7a2f;
+  --color-blood-ink: #9e3b2f;
+  --color-guardian: #86a6d0;
+  --color-guardian-ink: #3f5f86;
+  /* Recurring framing colours */
+  --color-gold-edge: #7a5d28;
+  --color-btn-ink: #221708;
+  --color-panel: #211810;
+  --color-rim: #14100a;
+  --color-vote-tint: #2a1f12;
+  --color-warn: #e0a25a;
+
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, 'Times New Roman', serif;
+
+  /* Candlelight glow that gently flickers */
+  --animate-flicker: flicker 4s ease-in-out infinite;
+  /* Scene entry */
+  --animate-fade: fade 0.4s ease both;
+  /* "What to tap" candleglow pulse */
+  --animate-pulse-glow: pulse-glow 1.5s ease-in-out infinite;
+  /* Hint banner pointing hand */
+  --animate-bob: bob 1.2s ease-in-out infinite;
+  /* Roster card entry */
+  --animate-pop: pop 0.3s ease both;
+  /* Gilt shimmer while a selfie is repainted in the background */
+  --animate-enhance: enhance-pulse 1.4s ease-in-out infinite;
+  /* Elimination reveal: the portrait drains to its fate tint */
+  --animate-drain-grey: drain-grey 1.5s ease-out 0.3s both;
+  --animate-drain-slain: drain-slain 1.5s ease-out 0.3s both;
+  --animate-fade-in-slow: fade-in 1.5s ease-out 0.3s both;
+  /* Hourglass streaming sand */
+  --animate-hg-stream: hg-stream 0.6s linear infinite;
+
+  @keyframes flicker {
+    0%, 100% { opacity: 0.85; }
+    25% { opacity: 1; }
+    50% { opacity: 0.7; }
+    75% { opacity: 0.95; }
+  }
+  @keyframes fade {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 200, 115, 0); }
+    50% { box-shadow: 0 0 0 6px rgba(232, 200, 115, 0.25), 0 0 26px rgba(232, 200, 115, 0.5); }
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes enhance-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px #14100a, 0 0 0 3px rgba(201, 162, 74, 0.6); }
+    50% { box-shadow: 0 0 0 2px #14100a, 0 0 0 4px rgba(232, 196, 104, 1); }
+  }
+  @keyframes drain-grey {
+    from { filter: none; }
+    to { filter: grayscale(0.5); }
+  }
+  @keyframes drain-slain {
+    from { filter: none; }
+    to { filter: grayscale(1) contrast(0.95) brightness(0.92); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes hg-stream {
+    0%, 100% { opacity: 0.25; }
+    50% { opacity: 0.9; }
+  }
+}
+
+/* Hourglass sand: duration comes from a prop at runtime (inline animation), so
+ * these keyframes live outside @theme — there is no fixed --animate-* token. */
+@keyframes hg-drain {
+  from { height: 100%; }
+  to { height: 0; }
+}
+@keyframes hg-fill {
+  from { height: 0; }
+  to { height: 100%; }
+}
+
+/* Avatars — gold-rimmed medallions */
+@utility shadow-medallion {
+  box-shadow: 0 0 0 2px #14100a, 0 0 0 3px rgba(201, 162, 74, 0.6);
+}
+/* Large gate avatar gets a deeper drop shadow */
+@utility shadow-medallion-lg {
+  box-shadow: 0 0 0 2px #14100a, 0 0 0 4px rgba(201, 162, 74, 0.6), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+/* Pressed gold plaque (primary button) */
+@utility shadow-plaque {
+  box-shadow: 0 2px 0 #5e4720, 0 6px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+/* Phone frame: dark leather with gold piping */
+@utility shadow-phone {
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 6px #16100a,
+    inset 0 0 0 7px rgba(201, 162, 74, 0.35),
+    inset 0 2px 30px rgba(0, 0, 0, 0.6);
+}
+/* Flip-card face */
+@utility shadow-face {
+  box-shadow: inset 0 0 0 2px rgba(201, 162, 74, 0.4), 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+/* Scrollable content with the scrollbar hidden */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}
