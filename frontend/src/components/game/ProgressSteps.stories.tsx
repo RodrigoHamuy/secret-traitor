@@ -1,19 +1,25 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { ProgressSteps } from './ProgressSteps';
 
-const meta = {
-  title: 'Game/ProgressSteps',
-  component: ProgressSteps,
-} satisfies Meta<typeof ProgressSteps>;
+export default { title: 'Game/ProgressSteps' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const VoteActive: Story = {
-  args: { steps: ['Vote', 'Assassinate'], active: 0 },
-};
-
-export const SpecialActive: Story = {
-  args: { steps: ['Vote', 'Protect'], active: 1 },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { steps, active } = useControls(
+      {
+        // Comma-separated step labels.
+        steps: 'Vote, Assassinate',
+        active: { value: 0, min: 0, max: 5, step: 1 },
+      },
+      { store },
+    );
+    const labels = steps
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return <ProgressSteps steps={labels} active={active} />;
+  },
 };

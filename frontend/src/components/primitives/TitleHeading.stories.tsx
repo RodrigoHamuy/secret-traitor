@@ -1,32 +1,24 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { TitleHeading } from './TitleHeading';
+import type { TitleHeadingProps } from './TitleHeading';
 
-const meta = {
-  title: 'Primitives/TitleHeading',
-  component: TitleHeading,
-} satisfies Meta<typeof TitleHeading>;
+export default { title: 'Primitives/TitleHeading' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const TONE_OPTIONS = ['gold', 'virtue', 'blood'];
 
-export const Default: Story = {
-  args: {
-    center: true,
-    children: (
-      <>
-        SECRET
-        <br />
-        TRAITOR
-      </>
-    ),
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { children, tone, center } = useControls(
+      { children: 'SECRET TRAITOR', tone: { options: TONE_OPTIONS }, center: true },
+      { store },
+    );
+    return (
+      <TitleHeading tone={tone as TitleHeadingProps['tone']} center={center}>
+        {children}
+      </TitleHeading>
+    );
   },
-};
-
-export const VirtuousWin: Story = {
-  args: { tone: 'virtue', center: true, className: 'text-3xl', children: 'THE VIRTUOUS WIN' },
-};
-
-export const AssassinsWin: Story = {
-  args: { tone: 'blood', center: true, className: 'text-3xl', children: 'THE ASSASSINS WIN' },
 };

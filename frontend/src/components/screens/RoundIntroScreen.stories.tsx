@@ -1,36 +1,39 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { RoundIntroScreen } from './RoundIntroScreen';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Screens/RoundIntroScreen',
-  component: RoundIntroScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof RoundIntroScreen>;
+export default { title: 'Screens/RoundIntroScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const RoundOne: Story = {
-  args: {
-    round: 1,
-    prompt: 'Who already looks guilty?',
-    durationSeconds: 60,
-    timerLabel: '1:00',
-    aliveCount: 6,
-    ctaLabel: 'Skip & pass the phone around',
-  },
-};
-
-export const TimeUp: Story = {
-  args: {
-    round: 3,
-    prompt: 'Debate aloud — who do you suspect?',
-    durationSeconds: 0,
-    timerLabel: "Time's up",
-    timeUp: true,
-    aliveCount: 4,
-    ctaLabel: 'Pass the phone around',
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { round, prompt, durationSeconds, timerLabel, timeUp, aliveCount, ctaLabel } =
+      useControls(
+        {
+          round: { value: 1, min: 1, max: 10, step: 1 },
+          prompt: 'Who already looks guilty?',
+          durationSeconds: { value: 60, min: 0, max: 120, step: 1 },
+          timerLabel: '1:00',
+          timeUp: false,
+          aliveCount: { value: 6, min: 1, max: 12, step: 1 },
+          ctaLabel: 'Skip & pass the phone around',
+        },
+        { store },
+      );
+    // key restarts the hourglass drain when the duration changes.
+    return (
+      <RoundIntroScreen
+        key={durationSeconds}
+        round={round}
+        prompt={prompt}
+        durationSeconds={durationSeconds}
+        timerLabel={timerLabel}
+        timeUp={timeUp}
+        aliveCount={aliveCount}
+        ctaLabel={ctaLabel}
+      />
+    );
   },
 };

@@ -1,46 +1,38 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { Avatar } from './Avatar';
+import type { AvatarProps } from './Avatar';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Game/Avatar',
-  component: Avatar,
-} satisfies Meta<typeof Avatar>;
+export default { title: 'Game/Avatar' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const SIZE_OPTIONS = ['xs', 'sm', 'xl', 'fill'];
+const FATE_OPTIONS = ['none', 'banished', 'slain'];
 
-export const Initials: Story = {
-  args: { name: 'Lorenzo' },
-};
-
-export const Photo: Story = {
-  args: { name: 'Isabella', photoUrl: SAMPLE_PHOTO },
-};
-
-export const Sizes: Story = {
-  args: { name: 'Lorenzo' },
-  render: () => (
-    <div className="flex items-end gap-6">
-      <Avatar name="Lorenzo" size="xs" />
-      <Avatar name="Lorenzo" size="sm" />
-      <Avatar name="Lorenzo" size="xl" />
-      <div className="w-24">
-        <Avatar name="Lorenzo" size="fill" />
-      </div>
-    </div>
-  ),
-};
-
-export const Banished: Story = {
-  args: { name: 'Isabella', photoUrl: SAMPLE_PHOTO, fate: 'banished', size: 'xl' },
-};
-
-export const Slain: Story = {
-  args: { name: 'Isabella', photoUrl: SAMPLE_PHOTO, fate: 'slain', size: 'xl' },
-};
-
-export const Enhancing: Story = {
-  args: { name: 'Isabella', photoUrl: SAMPLE_PHOTO, enhancing: true, size: 'xl' },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { name, photo, size, fate, enhancing, animateFate } = useControls(
+      {
+        name: 'Isabella',
+        photo: true,
+        size: { value: 'xl', options: SIZE_OPTIONS },
+        fate: { options: FATE_OPTIONS },
+        enhancing: false,
+        animateFate: false,
+      },
+      { store },
+    );
+    return (
+      <Avatar
+        name={name}
+        photoUrl={photo ? SAMPLE_PHOTO : undefined}
+        size={size as AvatarProps['size']}
+        fate={fate === 'none' ? undefined : (fate as AvatarProps['fate'])}
+        enhancing={enhancing}
+        animateFate={animateFate}
+      />
+    );
+  },
 };

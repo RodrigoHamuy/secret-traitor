@@ -1,26 +1,27 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { DawnPortrait } from './DawnPortrait';
+import type { DawnPortraitProps } from './DawnPortrait';
 import { withAppWidth } from '../../storybook/decorators';
-import { ISABELLA } from '../../storybook/sampleData';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Game/DawnPortrait',
-  component: DawnPortrait,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof DawnPortrait>;
+export default { title: 'Game/DawnPortrait', decorators: [withAppWidth] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const FATE_OPTIONS = ['none', 'banished', 'slain'];
 
-export const Spared: Story = {
-  args: { avatar: ISABELLA },
-};
-
-export const Banished: Story = {
-  args: { avatar: ISABELLA, fate: 'banished' },
-};
-
-export const Slain: Story = {
-  args: { avatar: ISABELLA, fate: 'slain' },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { name, photo, fate } = useControls(
+      { name: 'Isabella', photo: true, fate: { options: FATE_OPTIONS } },
+      { store },
+    );
+    return (
+      <DawnPortrait
+        avatar={{ name, photoUrl: photo ? SAMPLE_PHOTO : undefined }}
+        fate={fate === 'none' ? undefined : (fate as DawnPortraitProps['fate'])}
+      />
+    );
+  },
 };

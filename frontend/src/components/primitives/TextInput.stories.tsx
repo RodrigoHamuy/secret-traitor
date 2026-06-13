@@ -1,21 +1,19 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { TextInput } from './TextInput';
 import { withAppWidth } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Primitives/TextInput',
-  component: TextInput,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof TextInput>;
+export default { title: 'Primitives/TextInput', decorators: [withAppWidth] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Empty: Story = {
-  args: { placeholder: 'Your name', maxLength: 14 },
-};
-
-export const Filled: Story = {
-  args: { defaultValue: 'Isabella', maxLength: 14 },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { placeholder, maxLength } = useControls(
+      { placeholder: 'Your name', maxLength: 14 },
+      { store },
+    );
+    // Left uncontrolled so you can type into it; leva drives the config props.
+    return <TextInput placeholder={placeholder} maxLength={maxLength} />;
+  },
 };

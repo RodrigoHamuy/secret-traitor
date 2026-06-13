@@ -1,11 +1,14 @@
+import { useState } from 'react';
+
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { PickCard } from './PickCard';
-import { ISABELLA, LORENZO } from '../../storybook/sampleData';
+import type { PickCardProps } from './PickCard';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
+export default {
   title: 'Game/PickCard',
-  component: PickCard,
   decorators: [
     (Story) => (
       <div className="w-44">
@@ -13,37 +16,34 @@ const meta = {
       </div>
     ),
   ],
-} satisfies Meta<typeof PickCard>;
+} satisfies Meta;
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const TINT_OPTIONS = ['vote', 'kill', 'shield', 'win'];
 
-export const Default: Story = {
-  args: { avatar: LORENZO },
-};
-
-export const Selected: Story = {
-  args: { avatar: LORENZO, selected: true },
-};
-
-export const SelectedVote: Story = {
-  args: { avatar: ISABELLA, selected: true, tint: 'vote' },
-};
-
-export const SelectedKill: Story = {
-  args: { avatar: ISABELLA, selected: true, tint: 'kill' },
-};
-
-export const SelectedShield: Story = {
-  args: { avatar: ISABELLA, selected: true, tint: 'shield' },
-};
-
-export const WinnerCrown: Story = {
-  args: {
-    avatar: ISABELLA,
-    selected: true,
-    tint: 'win',
-    crown: true,
-    roleTag: { label: 'GUARDIAN', color: 'var(--color-guardian)' },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { name, photo, tint, crown, roleTag } = useControls(
+      {
+        name: 'Isabella',
+        photo: true,
+        tint: { options: TINT_OPTIONS },
+        crown: false,
+        roleTag: false,
+      },
+      { store },
+    );
+    // Tint/crown/tag only show on a selected card — click to toggle selection.
+    const [selected, setSelected] = useState(true);
+    return (
+      <PickCard
+        avatar={{ name, photoUrl: photo ? SAMPLE_PHOTO : undefined }}
+        selected={selected}
+        onClick={() => setSelected((s) => !s)}
+        tint={tint as PickCardProps['tint']}
+        crown={crown}
+        roleTag={roleTag ? { label: 'GUARDIAN', color: 'var(--color-guardian)' } : undefined}
+      />
+    );
   },
 };

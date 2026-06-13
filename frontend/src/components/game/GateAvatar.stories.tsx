@@ -1,20 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { GateAvatar } from './GateAvatar';
-import { ISABELLA, LORENZO } from '../../storybook/sampleData';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Game/GateAvatar',
-  component: GateAvatar,
-} satisfies Meta<typeof GateAvatar>;
+export default { title: 'Game/GateAvatar' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Photo: Story = {
-  args: { avatar: ISABELLA },
-};
-
-export const Initials: Story = {
-  args: { avatar: LORENZO },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { name, photo } = useControls({ name: 'Isabella', photo: true }, { store });
+    return <GateAvatar avatar={{ name, photoUrl: photo ? SAMPLE_PHOTO : undefined }} />;
+  },
 };

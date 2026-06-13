@@ -1,26 +1,26 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { VoteList } from './VoteList';
 import { VoteRow } from './VoteRow';
 import { withAppWidth } from '../../storybook/decorators';
 import { PLAYERS } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Game/VoteList',
-  component: VoteList,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof VoteList>;
+export default { title: 'Game/VoteList', decorators: [withAppWidth] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const AllBallots: Story = {
-  args: { children: null },
-  render: () => (
-    <VoteList>
-      {PLAYERS.map((p, i) => (
-        <VoteRow key={p.name} voter={p} choice={PLAYERS[(i + 2) % PLAYERS.length]} />
-      ))}
-    </VoteList>
-  ),
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { count } = useControls(
+      { count: { value: PLAYERS.length, min: 1, max: PLAYERS.length, step: 1 } },
+      { store },
+    );
+    return (
+      <VoteList>
+        {PLAYERS.slice(0, count).map((p, i) => (
+          <VoteRow key={p.name} voter={p} choice={PLAYERS[(i + 2) % PLAYERS.length]} />
+        ))}
+      </VoteList>
+    );
+  },
 };

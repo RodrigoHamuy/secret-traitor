@@ -1,20 +1,15 @@
 import { useState } from 'react';
 
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { CardBack } from './CardBack';
 import { FlipCard } from './FlipCard';
+import type { FlipCardProps } from './FlipCard';
 import { RoleCardFront } from './RoleCardFront';
 import { withAppWidth } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Game/FlipCard',
-  component: FlipCard,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof FlipCard>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
+export default { title: 'Game/FlipCard', decorators: [withAppWidth] };
 
 const back = <CardBack glyph="🤫" />;
 const front = (
@@ -24,16 +19,22 @@ const front = (
   />
 );
 
-function TapToFlip() {
-  const [flipped, setFlipped] = useState(false);
-  return <FlipCard flipped={flipped} onFlip={() => setFlipped(true)} back={back} front={front} />;
-}
+const ASPECT_OPTIONS = ['role', 'ballot'];
 
-export const FaceDown: Story = {
-  args: { flipped: false, back, front },
-  render: () => <TapToFlip />,
-};
-
-export const Flipped: Story = {
-  args: { flipped: true, back, front },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { aspect } = useControls({ aspect: { options: ASPECT_OPTIONS } }, { store });
+    // Tap the face-down card to flip it.
+    const [flipped, setFlipped] = useState(false);
+    return (
+      <FlipCard
+        flipped={flipped}
+        onFlip={() => setFlipped(true)}
+        aspect={aspect as FlipCardProps['aspect']}
+        back={back}
+        front={front}
+      />
+    );
+  },
 };

@@ -1,15 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { Eyebrow } from './Eyebrow';
 
-const meta = {
-  title: 'Primitives/Eyebrow',
-  component: Eyebrow,
-} satisfies Meta<typeof Eyebrow>;
+export default { title: 'Primitives/Eyebrow' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { children: 'A game of trust & betrayal' },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { children, center } = useControls(
+      { children: 'A game of trust & betrayal', center: false },
+      { store },
+    );
+    return <Eyebrow center={center}>{children}</Eyebrow>;
+  },
 };

@@ -1,22 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { SelfiePreview } from './SelfiePreview';
 import { SelfieStage } from './SelfieStage';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Game/SelfieStage',
-  component: SelfieStage,
-} satisfies Meta<typeof SelfieStage>;
+export default { title: 'Game/SelfieStage' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Empty: Story = {
-  // The real app slots the live <video> feed here.
-  args: { children: null },
-};
-
-export const WithPreview: Story = {
-  args: { children: <SelfiePreview src={SAMPLE_PHOTO} /> },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    // The real app slots the live <video> feed in here; toggle a captured preview.
+    const { withPreview } = useControls({ withPreview: true }, { store });
+    return <SelfieStage>{withPreview ? <SelfiePreview src={SAMPLE_PHOTO} /> : null}</SelfieStage>;
+  },
 };

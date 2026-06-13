@@ -1,19 +1,14 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { StepButton } from './StepButton';
 
-const meta = {
-  title: 'Primitives/StepButton',
-  component: StepButton,
-} satisfies Meta<typeof StepButton>;
+export default { title: 'Primitives/StepButton' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { children: '+' },
-};
-
-export const Disabled: Story = {
-  args: { children: '−', disabled: true },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { children, disabled } = useControls({ children: '+', disabled: false }, { store });
+    return <StepButton disabled={disabled}>{children}</StepButton>;
+  },
 };
