@@ -13,7 +13,8 @@ name: PR preview deploy
 #
 # New commits on the same PR redeploy (overwrite) the same Workers. The matching
 # pr-preview-cleanup.yml workflow deletes all of them when the PR is closed.
-# Storybook is PR-preview only: it is deliberately never deployed on merge to main.
+# On merge to main, Storybook is published to its own production Worker by
+# deploy-storybook.yml (named secret-traitor-sb).
 #
 # Required GitHub repository secrets (same ones the prod deploy-worker.yml uses):
 #   CLOUDFLARE_API_TOKEN   — token with the "Edit Cloudflare Workers" permission.

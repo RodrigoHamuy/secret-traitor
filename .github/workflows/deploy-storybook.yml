@@ -1,0 +1,72 @@
+name: Deploy Storybook
+
+# Deploys the component-library Storybook (built from frontend/) to a dedicated
+# Cloudflare Worker on merge to main — the production counterpart to the per-PR
+# Storybook preview in pr-preview-deploy.yml, mirroring how deploy-worker.yml
+# publishes the production backend. Served as an assets-only Worker at:
+#
+#   secret-traitor-sb.<subdomain>.workers.dev
+#
+# Required GitHub repository secrets (same ones deploy-worker.yml uses):
+#   CLOUDFLARE_API_TOKEN   — a Cloudflare API token with the "Edit Cloudflare Workers" permission.
+#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID.
+
+on:
+  push:
+    branches:
+      - main
+    # Only redeploy when the Storybook source (frontend/) or this workflow changes.
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-storybook.yml'
+  workflow_dispatch:
+
+# One deploy at a time; newer pushes supersede in-progress ones.
+concurrency:
+  group: deploy-storybook
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Build Storybook
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build-storybook
+
+      # Serve the static Storybook build as an assets-only Worker (same shape as
+      # the PR-preview Storybook deploy, but with the stable production name).
+      - name: Stage Storybook
+        run: |
+          mkdir -p sb-prod
+          cat > sb-prod/wrangler.toml <<EOF
+          name = "secret-traitor-sb"
+          compatibility_date = "2024-11-01"
+
+          [assets]
+          directory = "../frontend/storybook-static"
+          EOF
+
+      - name: Deploy Storybook Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: sb-prod
