@@ -38,9 +38,11 @@ function LevaStory({ children }: { children: ReactNode }) {
   const store = useCreateStore();
   return (
     <LevaStoreProvider store={store}>
-      <div className="fixed top-3 right-3 z-50 w-70">
-        <LevaPanel store={store} fill flat titleBar={{ drag: false }} />
-      </div>
+      {/* leva's native floating panel: fixed top-right and draggable by its
+          title bar. Rendered at this outermost decorator level it has no
+          transformed ancestor (FlipCard / PhoneFrame live inside the story),
+          so it needs no portal or manual positioning. */}
+      <LevaPanel store={store} />
       {/* Replicates the static app's page <body>: dark backdrop, Garamond body
           text in warm parchment, content centred at the top. */}
       <div className="flex min-h-screen w-full flex-col items-center bg-[#070504] p-6 font-body text-parchment">
