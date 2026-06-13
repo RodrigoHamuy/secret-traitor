@@ -1,18 +1,12 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { RosterEntry } from './WinScreen';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { WinScreen } from './WinScreen';
+import type { RosterEntry, WinScreenProps } from './WinScreen';
 import { withPhone } from '../../storybook/decorators';
 import { BIANCA, CATERINA, ISABELLA, LORENZO, MATTEO, NICCOLO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Screens/WinScreen',
-  component: WinScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof WinScreen>;
-
-export default meta;
-type Story = StoryObj<typeof meta>;
+export default { title: 'Screens/WinScreen', decorators: [withPhone] };
 
 const VIRTUOUS = 'var(--color-virtue)';
 const GUARDIAN = 'var(--color-guardian)';
@@ -36,10 +30,18 @@ const assassinsWinRoster: RosterEntry[] = [
   { avatar: NICCOLO, roleLabel: 'VIRTUOUS', roleColor: VIRTUOUS, winner: false },
 ];
 
-export const VirtuousWin: Story = {
-  args: { team: 'virtuous', roster: virtuousWinRoster },
-};
+const TEAM_OPTIONS = ['virtuous', 'assassins'];
 
-export const AssassinsWin: Story = {
-  args: { team: 'assassins', roster: assassinsWinRoster },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { team } = useControls({ team: { options: TEAM_OPTIONS } }, { store });
+    const winTeam = team as WinScreenProps['team'];
+    return (
+      <WinScreen
+        team={winTeam}
+        roster={winTeam === 'assassins' ? assassinsWinRoster : virtuousWinRoster}
+      />
+    );
+  },
 };

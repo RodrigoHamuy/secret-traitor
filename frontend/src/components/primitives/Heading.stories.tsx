@@ -1,15 +1,17 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { Heading } from './Heading';
 
-const meta = {
-  title: 'Primitives/Heading',
-  component: Heading,
-} satisfies Meta<typeof Heading>;
+export default { title: 'Primitives/Heading' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { children: 'How many are playing?' },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { children, center } = useControls(
+      { children: 'How many are playing?', center: false },
+      { store },
+    );
+    return <Heading center={center}>{children}</Heading>;
+  },
 };

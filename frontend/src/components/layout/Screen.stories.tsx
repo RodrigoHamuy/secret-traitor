@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { Screen } from './Screen';
 import { Spacer } from './Spacer';
@@ -7,42 +8,43 @@ import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Layout/Screen',
-  component: Screen,
-  decorators: [withPhone],
-} satisfies Meta<typeof Screen>;
+export default { title: 'Layout/Screen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const ShortContent: Story = {
-  args: {
-    children: (
-      <>
-        <Spacer />
-        <Heading center>Centred content</Heading>
-        <BodyText center>Spacers above and below centre short scenes; the CTA stays pinned.</BodyText>
-        <Spacer />
-      </>
-    ),
-    footer: <Button>Continue</Button>,
-  },
-};
-
-export const ScrollingContent: Story = {
-  args: {
-    children: (
-      <>
-        <Heading>A long scroll</Heading>
-        {Array.from({ length: 12 }, (_, i) => (
-          <BodyText key={i}>
-            Paragraph {i + 1}: the content area scrolls behind the pinned footer, with the scrollbar
-            hidden.
-          </BodyText>
-        ))}
-      </>
-    ),
-    footer: <Button>Always visible</Button>,
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { heading, paragraphs, footerLabel } = useControls(
+      {
+        heading: 'Centred content',
+        // 0–1 → short, vertically-centred scene; more → scrolling content.
+        paragraphs: { value: 0, min: 0, max: 20, step: 1 },
+        footerLabel: 'Continue',
+      },
+      { store },
+    );
+    return (
+      <Screen footer={<Button>{footerLabel}</Button>}>
+        {paragraphs <= 1 ? (
+          <>
+            <Spacer />
+            <Heading center>{heading}</Heading>
+            <BodyText center>
+              Spacers above and below centre short scenes; the CTA stays pinned.
+            </BodyText>
+            <Spacer />
+          </>
+        ) : (
+          <>
+            <Heading>{heading}</Heading>
+            {Array.from({ length: paragraphs }, (_, i) => (
+              <BodyText key={i}>
+                Paragraph {i + 1}: the content area scrolls behind the pinned footer, with the
+                scrollbar hidden.
+              </BodyText>
+            ))}
+          </>
+        )}
+      </Screen>
+    );
   },
 };

@@ -1,69 +1,44 @@
 import { useState } from 'react';
 
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { RoleRevealScreen } from './RoleRevealScreen';
 import { RoleCardFront } from '../game/RoleCardFront';
+import type { RoleCardFrontProps } from '../game/RoleCardFront';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Screens/RoleRevealScreen',
-  component: RoleRevealScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof RoleRevealScreen>;
+export default { title: 'Screens/RoleRevealScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const ROLE_OPTIONS = ['virtuous', 'guardian', 'assassin'];
 
-const assassinFront = (
-  <RoleCardFront
-    role="assassin"
-    description="Each round, secretly mark a victim to assassinate — then cast your vote to deflect suspicion."
-    fellowAssassins={['Bianca']}
-  />
-);
-
-function TapToReveal() {
-  const [flipped, setFlipped] = useState(false);
-  return (
-    <RoleRevealScreen
-      eyebrow="Secret roles · 2 of 6"
-      title="Lorenzo, this is you"
-      front={assassinFront}
-      flipped={flipped}
-      onFlip={() => setFlipped(true)}
-      ctaLabel="Hide & pass on"
-    />
-  );
-}
-
-export const FaceDown: Story = {
-  args: {
-    eyebrow: 'Secret roles · 2 of 6',
-    title: 'Lorenzo, this is you',
-    front: assassinFront,
-    flipped: false,
-    ctaLabel: 'Hide & pass on',
-  },
-  render: () => <TapToReveal />,
-};
-
-export const RevealedAssassin: Story = {
-  args: {
-    eyebrow: 'Secret roles · 2 of 6',
-    title: 'Lorenzo, this is you',
-    front: assassinFront,
-    flipped: true,
-    ctaLabel: 'Hide & pass on',
-  },
-};
-
-export const EliminationReveal: Story = {
-  args: {
-    eyebrow: 'Banished · round 3',
-    title: 'Caterina, reveal yourself',
-    front: <RoleCardFront role="virtuous" description="Caterina was one of the Virtuous." />,
-    flipped: true,
-    ctaLabel: 'Continue',
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { eyebrow, title, role, description, ctaLabel } = useControls(
+      {
+        eyebrow: 'Secret roles · 2 of 6',
+        title: 'Lorenzo, this is you',
+        role: { options: ROLE_OPTIONS },
+        description:
+          'Each round, secretly mark a victim to assassinate — then cast your vote to deflect suspicion.',
+        ctaLabel: 'Hide & pass on',
+      },
+      { store },
+    );
+    // Tap the card to reveal it.
+    const [flipped, setFlipped] = useState(false);
+    return (
+      <RoleRevealScreen
+        eyebrow={eyebrow}
+        title={title}
+        front={
+          <RoleCardFront role={role as RoleCardFrontProps['role']} description={description} />
+        }
+        flipped={flipped}
+        onFlip={() => setFlipped(true)}
+        ctaLabel={ctaLabel}
+      />
+    );
   },
 };

@@ -1,16 +1,20 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { VoteRow } from './VoteRow';
-import { ISABELLA, LORENZO } from '../../storybook/sampleData';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Game/VoteRow',
-  component: VoteRow,
-} satisfies Meta<typeof VoteRow>;
+export default { title: 'Game/VoteRow' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { voter: ISABELLA, choice: LORENZO },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { voterName, choiceName } = useControls(
+      { voterName: 'Isabella', choiceName: 'Lorenzo' },
+      { store },
+    );
+    return (
+      <VoteRow voter={{ name: voterName, photoUrl: SAMPLE_PHOTO }} choice={{ name: choiceName }} />
+    );
+  },
 };

@@ -4,9 +4,9 @@ import { SelfiePreview } from './SelfiePreview';
 import { SelfieStage } from './SelfieStage';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
+// SelfiePreview just renders a captured image — nothing to drive from leva.
+export default {
   title: 'Game/SelfiePreview',
-  component: SelfiePreview,
   decorators: [
     (Story) => (
       <SelfieStage>
@@ -14,11 +14,8 @@ const meta = {
       </SelfieStage>
     ),
   ],
-} satisfies Meta<typeof SelfiePreview>;
+} satisfies Meta;
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { src: SAMPLE_PHOTO },
+export const Default: StoryObj = {
+  render: () => <SelfiePreview src={SAMPLE_PHOTO} />,
 };

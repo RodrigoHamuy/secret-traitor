@@ -1,89 +1,51 @@
 import { useState } from 'react';
 
-import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { ChoosePlayerScreenProps } from './ChoosePlayerScreen';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { ChoosePlayerScreen } from './ChoosePlayerScreen';
+import type { ChoosePlayerScreenProps } from './ChoosePlayerScreen';
 import { withPhone } from '../../storybook/decorators';
 import { PLAYERS } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Screens/ChoosePlayerScreen',
-  component: ChoosePlayerScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof ChoosePlayerScreen>;
+export default { title: 'Screens/ChoosePlayerScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const TINT_OPTIONS = ['vote', 'kill', 'shield'];
 
-function InteractiveChoose(args: ChoosePlayerScreenProps) {
-  const [selected, setSelected] = useState(args.selectedName);
-  return <ChoosePlayerScreen {...args} selectedName={selected} onSelect={setSelected} />;
-}
-
-const voteArgs: ChoosePlayerScreenProps = {
-  emoji: '🗳️',
-  eyebrow: 'Round 2 · VOTE',
-  title: 'Matteo, who do you vote to banish?',
-  sub: 'You only cast a vote — whoever the majority picks is banished.',
-  tint: 'vote',
-  players: PLAYERS.slice(0, 5),
-  ctaLabel: 'Cast vote',
-  ctaEmoji: '🗳️',
-};
-
-export const Vote: Story = {
-  args: voteArgs,
-  render: (args) => <InteractiveChoose {...args} />,
-};
-
-export const VoteSelected: Story = {
-  args: { ...voteArgs, selectedName: PLAYERS[1].name },
-  render: (args) => <InteractiveChoose {...args} />,
-};
-
-export const Assassinate: Story = {
-  args: {
-    steps: { labels: ['Vote', 'Assassinate'], active: 1 },
-    emoji: '🗡️',
-    eyebrow: 'Round 2 · ASSASSINATE',
-    title: 'Mark your victim',
-    sub: 'Strike down one of the Virtuous tonight.',
-    tint: 'kill',
-    players: PLAYERS.slice(0, 4),
-    selectedName: PLAYERS[0].name,
-    ctaLabel: 'Assassinate',
-    ctaEmoji: '🗡️',
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { eyebrow, emoji, title, sub, tint, ctaLabel, ctaEmoji, playerCount, showSteps } =
+      useControls(
+        {
+          eyebrow: 'Round 2 · VOTE',
+          emoji: '🗳️',
+          title: 'Matteo, who do you vote to banish?',
+          sub: 'You only cast a vote — whoever the majority picks is banished.',
+          tint: { options: TINT_OPTIONS },
+          ctaLabel: 'Cast vote',
+          ctaEmoji: '🗳️',
+          playerCount: { value: 5, min: 2, max: PLAYERS.length, step: 1 },
+          showSteps: false,
+        },
+        { store },
+      );
+    // Selection stays click-driven.
+    const [selected, setSelected] = useState<string | undefined>(undefined);
+    return (
+      <ChoosePlayerScreen
+        steps={showSteps ? { labels: ['Vote', 'Assassinate'], active: 1 } : undefined}
+        emoji={emoji || undefined}
+        eyebrow={eyebrow || undefined}
+        title={title}
+        sub={sub || undefined}
+        tint={tint as ChoosePlayerScreenProps['tint']}
+        players={PLAYERS.slice(0, playerCount)}
+        selectedName={selected}
+        onSelect={setSelected}
+        ctaLabel={ctaLabel}
+        ctaEmoji={ctaEmoji || undefined}
+      />
+    );
   },
-  render: (args) => <InteractiveChoose {...args} />,
-};
-
-export const Protect: Story = {
-  args: {
-    steps: { labels: ['Vote', 'Protect'], active: 1 },
-    emoji: '🛡️',
-    eyebrow: 'Round 2 · PROTECT',
-    title: 'Choose who to protect',
-    sub: 'They survive any assassination this round.',
-    tint: 'shield',
-    players: PLAYERS.slice(0, 5),
-    selectedName: PLAYERS[2].name,
-    ctaLabel: 'Protect',
-    ctaEmoji: '🛡️',
-  },
-  render: (args) => <InteractiveChoose {...args} />,
-};
-
-export const Runoff: Story = {
-  args: {
-    emoji: '🗳️',
-    eyebrow: 'Round 2 · RE-VOTE · VOTE',
-    title: 'Matteo, who do you vote to banish?',
-    sub: 'Runoff — vote only between the tied players.',
-    tint: 'vote',
-    players: PLAYERS.slice(0, 2),
-    ctaLabel: 'Cast vote',
-    ctaEmoji: '🗳️',
-  },
-  render: (args) => <InteractiveChoose {...args} />,
 };

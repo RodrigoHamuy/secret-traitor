@@ -1,37 +1,36 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { Button } from './Button';
+import type { ButtonProps } from './Button';
 import { withAppWidth } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Primitives/Button',
-  component: Button,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof Button>;
+export default { title: 'Primitives/Button', decorators: [withAppWidth] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const VARIANT_OPTIONS = ['primary', 'secondary', 'ghost'];
 
-export const Primary: Story = {
-  args: { children: 'Deal roles' },
-};
-
-export const Secondary: Story = {
-  args: { children: 'Skip — use initials', variant: 'secondary' },
-};
-
-export const Ghost: Story = {
-  args: { children: 'Back', variant: 'ghost' },
-};
-
-export const Disabled: Story = {
-  args: { children: 'Continue', disabled: true },
-};
-
-export const WithEmoji: Story = {
-  args: { children: 'Cast vote', emoji: '🗳️' },
-};
-
-export const TargetPulse: Story = {
-  args: { children: 'Create Game', target: true },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { children, variant, target, disabled, emoji } = useControls(
+      {
+        children: 'Deal roles',
+        variant: { options: VARIANT_OPTIONS },
+        target: false,
+        disabled: false,
+        emoji: '',
+      },
+      { store },
+    );
+    return (
+      <Button
+        variant={variant as ButtonProps['variant']}
+        target={target}
+        disabled={disabled}
+        emoji={emoji || undefined}
+      >
+        {children}
+      </Button>
+    );
+  },
 };
