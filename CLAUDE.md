@@ -16,7 +16,7 @@
 - `.github/workflows/pr-preview-cleanup.yml` — deletes all three Workers when the PR closes. If a new per-PR Worker is added to the deploy workflow, its name must also be added to the cleanup loop here.
 - `.github/workflows/deploy-pages.yml` — deploys the static game to GitHub Pages on merge to main.
 - `.github/workflows/deploy-worker.yml` — deploys the production Replicate proxy Worker.
-- Storybook is **PR-preview only** by design — it is not deployed on merge to main.
+- `.github/workflows/deploy-storybook.yml` — deploys the production Storybook (built from `frontend/`) to a dedicated Worker (`secret-traitor-sb`) on merge to main, on changes to `frontend/**`. The production counterpart to the per-PR Storybook preview.
 
 ## Roadmap (not yet started — do NOT do this unless explicitly asked)
 
