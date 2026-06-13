@@ -1,21 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { VoteRevealIntroScreen } from './VoteRevealIntroScreen';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Screens/VoteRevealIntroScreen',
-  component: VoteRevealIntroScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof VoteRevealIntroScreen>;
+export default { title: 'Screens/VoteRevealIntroScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Suspense: Story = {
-  args: { suspense: true },
-};
-
-export const AllAtOnce: Story = {
-  args: { suspense: false },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { suspense } = useControls({ suspense: true }, { store });
+    return <VoteRevealIntroScreen suspense={suspense} />;
+  },
 };

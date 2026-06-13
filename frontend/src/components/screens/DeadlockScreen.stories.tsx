@@ -1,17 +1,20 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { DeadlockScreen } from './DeadlockScreen';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Screens/DeadlockScreen',
-  component: DeadlockScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof DeadlockScreen>;
+export default { title: 'Screens/DeadlockScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { tiedNames: ['Isabella', 'Lorenzo'] },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    // Comma-separated tied players.
+    const { tiedNames } = useControls({ tiedNames: 'Isabella, Lorenzo' }, { store });
+    const names = tiedNames
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return <DeadlockScreen tiedNames={names} />;
+  },
 };

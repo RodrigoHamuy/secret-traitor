@@ -1,38 +1,33 @@
 import { useState } from 'react';
 
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { NameEntryScreen } from './NameEntryScreen';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Screens/NameEntryScreen',
-  component: NameEntryScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof NameEntryScreen>;
+export default { title: 'Screens/NameEntryScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-function InteractiveNameEntry({ initial }: { initial: string }) {
-  const [value, setValue] = useState(initial);
-  return (
-    <NameEntryScreen
-      index={2}
-      total={6}
-      value={value}
-      onChange={setValue}
-      canContinue={value.trim().length > 0}
-    />
-  );
-}
-
-export const Empty: Story = {
-  args: { index: 2, total: 6, value: '' },
-  render: () => <InteractiveNameEntry initial="" />,
-};
-
-export const Valid: Story = {
-  args: { index: 2, total: 6, value: 'Isabella', canContinue: true },
-  render: () => <InteractiveNameEntry initial="Isabella" />,
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { index, total } = useControls(
+      {
+        index: { value: 2, min: 1, max: 12, step: 1 },
+        total: { value: 6, min: 1, max: 12, step: 1 },
+      },
+      { store },
+    );
+    // Type into the field to drive `value`/`canContinue`.
+    const [value, setValue] = useState('');
+    return (
+      <NameEntryScreen
+        index={index}
+        total={total}
+        value={value}
+        onChange={setValue}
+        canContinue={value.trim().length > 0}
+      />
+    );
+  },
 };

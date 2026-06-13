@@ -1,19 +1,18 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { Hourglass } from './Hourglass';
 
-const meta = {
-  title: 'Game/Hourglass',
-  component: Hourglass,
-} satisfies Meta<typeof Hourglass>;
+export default { title: 'Game/Hourglass' };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { durationSeconds: 60 },
-};
-
-export const ShortDuration: Story = {
-  args: { durationSeconds: 5 },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { durationSeconds } = useControls(
+      { durationSeconds: { value: 60, min: 1, max: 120, step: 1 } },
+      { store },
+    );
+    // key restarts the drain animation when the duration changes.
+    return <Hourglass key={durationSeconds} durationSeconds={durationSeconds} />;
+  },
 };

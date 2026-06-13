@@ -1,30 +1,32 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { DawnResolutionScreen } from './DawnResolutionScreen';
+import type { DawnResolutionScreenProps } from './DawnResolutionScreen';
 import { withPhone } from '../../storybook/decorators';
-import { ISABELLA } from '../../storybook/sampleData';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Screens/DawnResolutionScreen',
-  component: DawnResolutionScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof DawnResolutionScreen>;
+export default { title: 'Screens/DawnResolutionScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const OUTCOME_OPTIONS = ['killed', 'saved', 'already', 'none'];
 
-export const Killed: Story = {
-  args: { outcome: 'killed', victim: ISABELLA, ctaLabel: 'Pass the phone to Isabella' },
-};
-
-export const Saved: Story = {
-  args: { outcome: 'saved', victim: ISABELLA, ctaLabel: 'Continue' },
-};
-
-export const AlreadyDead: Story = {
-  args: { outcome: 'already', victim: ISABELLA, ctaLabel: 'Continue' },
-};
-
-export const NoBloodshed: Story = {
-  args: { outcome: 'none', ctaLabel: 'Continue' },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { outcome, victimName, ctaLabel } = useControls(
+      {
+        outcome: { options: OUTCOME_OPTIONS },
+        victimName: 'Isabella',
+        ctaLabel: 'Pass the phone to Isabella',
+      },
+      { store },
+    );
+    return (
+      <DawnResolutionScreen
+        outcome={outcome as DawnResolutionScreenProps['outcome']}
+        victim={{ name: victimName, photoUrl: SAMPLE_PHOTO }}
+        ctaLabel={ctaLabel}
+      />
+    );
+  },
 };

@@ -1,18 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { SelfieConfirmScreen } from './SelfieConfirmScreen';
 import { withPhone } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Screens/SelfieConfirmScreen',
-  component: SelfieConfirmScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof SelfieConfirmScreen>;
+export default { title: 'Screens/SelfieConfirmScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { playerName: 'Isabella', photoSrc: SAMPLE_PHOTO },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { playerName } = useControls({ playerName: 'Isabella' }, { store });
+    return <SelfieConfirmScreen playerName={playerName} photoSrc={SAMPLE_PHOTO} />;
+  },
 };

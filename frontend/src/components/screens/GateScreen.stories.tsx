@@ -1,30 +1,26 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { GateScreen } from './GateScreen';
 import { withPhone } from '../../storybook/decorators';
-import { ISABELLA } from '../../storybook/sampleData';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Screens/GateScreen',
-  component: GateScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof GateScreen>;
+export default { title: 'Screens/GateScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const WithAvatar: Story = {
-  args: { playerName: 'Isabella', avatar: ISABELLA },
-};
-
-export const EmojiFallback: Story = {
-  args: { playerName: 'Player 3' },
-};
-
-export const FirstPass: Story = {
-  args: {
-    playerName: 'Player 1',
-    sub: 'Hand it over before tapping — then type your name.',
-    buttonLabel: "I've got it",
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { playerName, avatar, sub, buttonLabel } = useControls(
+      { playerName: 'Isabella', avatar: true, sub: '', buttonLabel: '' },
+      { store },
+    );
+    return (
+      <GateScreen
+        playerName={playerName}
+        avatar={avatar ? { name: playerName, photoUrl: SAMPLE_PHOTO } : undefined}
+        sub={sub || undefined}
+        buttonLabel={buttonLabel || undefined}
+      />
+    );
   },
 };

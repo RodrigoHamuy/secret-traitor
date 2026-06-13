@@ -1,37 +1,32 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { BanishResultScreen } from './BanishResultScreen';
+import type { BanishResultScreenProps } from './BanishResultScreen';
 import { withPhone } from '../../storybook/decorators';
-import { ISABELLA } from '../../storybook/sampleData';
+import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-const meta = {
-  title: 'Screens/BanishResultScreen',
-  component: BanishResultScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof BanishResultScreen>;
+export default { title: 'Screens/BanishResultScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
+const VARIANT_OPTIONS = ['banished', 'tieBroken', 'noMajority'];
 
-export const Banished: Story = {
-  args: {
-    variant: 'banished',
-    banished: ISABELLA,
-    ctaLabel: 'Pass the phone to Isabella',
-  },
-};
-
-export const TieBroken: Story = {
-  args: {
-    variant: 'tieBroken',
-    banished: ISABELLA,
-    ctaLabel: 'Pass the phone to Isabella',
-  },
-};
-
-export const NoMajority: Story = {
-  args: {
-    variant: 'noMajority',
-    ctaLabel: 'Then, under cover of dark…',
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { variant, banishedName, ctaLabel } = useControls(
+      {
+        variant: { options: VARIANT_OPTIONS },
+        banishedName: 'Isabella',
+        ctaLabel: 'Pass the phone to Isabella',
+      },
+      { store },
+    );
+    return (
+      <BanishResultScreen
+        variant={variant as BanishResultScreenProps['variant']}
+        banished={{ name: banishedName, photoUrl: SAMPLE_PHOTO }}
+        ctaLabel={ctaLabel}
+      />
+    );
   },
 };

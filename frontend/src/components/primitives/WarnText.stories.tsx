@@ -1,17 +1,18 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { WarnText } from './WarnText';
 import { withAppWidth } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Primitives/WarnText',
-  component: WarnText,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof WarnText>;
+export default { title: 'Primitives/WarnText', decorators: [withAppWidth] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {
-  args: { children: "⚠ Fewer than 5 players is for quick testing — the game won't be much fun." },
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { children } = useControls(
+      { children: "⚠ Fewer than 5 players is for quick testing — the game won't be much fun." },
+      { store },
+    );
+    return <WarnText>{children}</WarnText>;
+  },
 };

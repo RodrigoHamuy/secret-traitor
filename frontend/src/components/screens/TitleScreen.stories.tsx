@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
+import { useControls, useStoreContext } from 'leva';
 
 import { TitleScreen } from './TitleScreen';
 import { withPhone } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Screens/TitleScreen',
-  component: TitleScreen,
-  decorators: [withPhone],
-} satisfies Meta<typeof TitleScreen>;
+export default { title: 'Screens/TitleScreen', decorators: [withPhone] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {};
+export const Playground: StoryObj = {
+  render: () => {
+    const store = useStoreContext();
+    const { joinDisabled } = useControls({ joinDisabled: true }, { store });
+    return <TitleScreen joinDisabled={joinDisabled} />;
+  },
+};

@@ -1,15 +1,11 @@
-import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { StoryObj } from '@storybook/react-vite';
 
 import { Divider } from './Divider';
 import { withAppWidth } from '../../storybook/decorators';
 
-const meta = {
-  title: 'Primitives/Divider',
-  component: Divider,
-  decorators: [withAppWidth],
-} satisfies Meta<typeof Divider>;
+// Divider takes no props — nothing to drive from leva.
+export default { title: 'Primitives/Divider', decorators: [withAppWidth] };
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-export const Default: Story = {};
+export const Default: StoryObj = {
+  render: () => <Divider />,
+};
