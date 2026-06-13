@@ -1,7 +1,9 @@
 /* Secret Traitor design system — ported from the root static app's app.css.
  * Theme: a candlelit chamber of intrigue. Engraved Roman capitals (Cinzel),
  * Garamond body, parchment plaques, aged gold framing, wax-seal red. */
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital@0;1&display=swap');
+/* Fonts (Cinzel + EB Garamond) are self-hosted via @fontsource and loaded as
+ * side-effect imports in .storybook/preview.tsx, so they render offline rather
+ * than relying on the Google Fonts CDN. */
 @import 'tailwindcss';
 
 @theme {
