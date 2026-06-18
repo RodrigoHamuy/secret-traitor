@@ -6,8 +6,7 @@ export interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
   variant?: 'primary' | 'secondary' | 'ghost';
   /** The "what to tap" highlight: candleglow pulse. */
   target?: boolean;
-  /** Leading emoji. The label stays centred exactly as if there were no emoji:
-   * two equal-width side columns flank it, the emoji centred in the left one. */
+  /** Leading emoji. Equal-width side columns keep the label centred as if there were no emoji. */
   emoji?: string;
 }
 

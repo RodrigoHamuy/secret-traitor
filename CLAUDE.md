@@ -1,5 +1,9 @@
 # Secret Traitor — repo guide
 
+## Code style
+
+Don't comment what the code already says. Self-explanatory code needs no comment — skip narration of what a line does, restating a name, or section-header banners. Comment only the non-obvious: a *why*, a gotcha, a workaround, an external constraint. When in doubt, leave it out. Prefer clearer names over explanatory comments.
+
 ## Layout
 
 This is a **pnpm workspace** (monorepo): `pnpm-workspace.yaml` at the root lists the member packages (currently just `frontend`), and there is a single root lockfile (`pnpm-lock.yaml`) — do **not** add a per-package lockfile. Run `pnpm install` once at the root to install every package. The root static game and `worker/` have no `package.json` (the worker deploys via wrangler), so they aren't workspace members.

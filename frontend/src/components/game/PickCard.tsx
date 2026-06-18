@@ -6,9 +6,8 @@ import { Avatar } from './Avatar';
 export interface PickCardProps {
   avatar: AvatarData;
   selected?: boolean;
-  /** Action tint on the chosen card: vote = dark, kill = red, shield = blue,
-   * win = gold (end-game roster). Colours the frame, name, AND washes over the
-   * portrait itself. */
+  /** Action tint on the chosen card (vote=dark, kill=red, shield=blue, win=gold):
+   * colours the frame and name and washes over the portrait. */
   tint?: 'vote' | 'kill' | 'shield' | 'win';
   /** End-game role tag shown under the name. */
   roleTag?: { label: string; color: string };

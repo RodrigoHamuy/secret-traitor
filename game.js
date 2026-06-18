@@ -1,52 +1,30 @@
-/* ===== Secret Traitor — real game (single device / pass & play) =====
- * Drives a full game on one shared phone, narrated like a game master.
- * Reuses render()/setHint()/app/scenes from app.js and window.Engine from engine.js.
- * Exposed as window.Game.
+/* Secret Traitor — single-device pass-&-play game (window.Game).
+ * Reuses render()/setHint()/app/scenes from app.js and Engine from engine.js.
  *
- * Flow: there is no separate night/day with "eyes shut". Each round the phone
- * passes around the table once. On their private turn (behind the "I'm X" gate),
- * an Assassin picks a victim then votes, a Guardian picks who to protect then
- * votes, and everyone else just votes. Because every player takes the phone in
- * turn order and the gate never names a role, identities stay hidden.
- *
- * Resolution: tally votes -> banish -> resolve the assassination. A banished
- * Assassin's strike is cancelled (and if it was the last Assassin, the game is
- * already over). A banished Guardian's shield is cancelled, but play continues.
- *
- * The real game passes no `hint`, so the bottom hint banner stays hidden.
+ * Each round the phone passes around the table once; on their private turn (behind
+ * the "I'm X" gate) an Assassin marks a victim and the Guardian picks who to protect,
+ * then everyone votes. Turn order + a role-blind gate keep identities hidden.
  */
 (function () {
   const COLORS = ['#e8c468', '#9fc06f', '#5aa9f0', '#e0564c', '#c58ef0', '#f0975a',
                   '#5ad2c0', '#d08fb0', '#b0c070', '#7fa6e0', '#e0a25a', '#90d0a0'];
 
-  // ----- Period-portrait enhancement (optional, bring-your-own Replicate token) -----
-  // The browser can't call api.replicate.com directly (no CORS), so requests go through
-  // a thin transparent CORS proxy that forwards whatever Replicate API path we hit and
-  // injects the player's token. Deploy your own and point this at it — see worker/README.md.
-  // The proxy stores no secrets. This is the proxy ORIGIN; we append the API path below.
+  // Optional period-portrait enhancement (bring-your-own Replicate token). The browser
+  // can't call api.replicate.com directly (no CORS), so requests go through a transparent
+  // proxy origin that injects the token — see worker/README.md. We append the API path below.
   const PORTRAIT_PROXY_URL = 'https://secret-traitor-replicate.hamuyrodrigo.workers.dev';
-  // PuLID: identity-preserving generation. Like InstantID, it extracts a face
-  // embedding from the selfie and LOCKS onto it while generating a fresh scene around
-  // it — so the costume/background can change freely without the face drifting — but
-  // it's a single fast model that stays warm (no cold-start), unlike InstantID's heavy
-  // multi-model pipeline. Replicate auto-deletes inputs/outputs within ~1 hour.
-  // It's a *community* model, run by version id. We POST { version, input } to
-  // /v1/predictions through the proxy. PORTRAIT_MODEL is just a human label for which
-  // model PORTRAIT_VERSION pins; bump the version from the model's Replicate page.
+  // PuLID locks onto a face embedding from the selfie and paints a fresh scene around it,
+  // so costume/background change freely without the face drifting — one fast model that
+  // stays warm. A community model run by version id (POST { version, input }).
   const PORTRAIT_MODEL = 'bytedance/pulid'; // label only — requests use the version
   const PORTRAIT_VERSION = '43d309c37ab4e62361e5e29b8e9e867fb2dcbcec77ae91206a8d95ac5dd451a0';
-  // The likeness dial (per PuLID's schema). Higher = closer to the real person, less
-  // "imagination"; lower = more painterly but drifts. Default is 0.8 (max 5).
-  //   IDENTITY_FIDELITY -> identity_scale ("ID scale") — the main face-likeness lever.
-  //     Push UP if faces look off. Paired with generation_mode 'fidelity' below.
-  const IDENTITY_FIDELITY = 1.0;    // identity_scale (likeness)
-  // Speed: PuLID is fast by design. num_steps default is 4; cfg_scale near 1 is the
-  // fastest setting (range [1, 1.5]). We generate a single sample (num_samples: 1).
-  const FAST_STEPS = 4;             // num_steps
+  // Face-likeness lever (PuLID identity_scale, default 0.8, max 5). Push up if faces
+  // look off; paired with generation_mode 'fidelity' below.
+  const IDENTITY_FIDELITY = 1.0;    // identity_scale
+  const FAST_STEPS = 4;             // num_steps (PuLID default)
 
-  // Each player gets a randomly assigned 16th-century character so portraits look
-  // distinct at a glance — different role, dress, setting and palette per person.
-  // Each entry bundles attire + a fitting backdrop so the look stays coherent.
+  // One 16th-century character per player so portraits look distinct at a glance;
+  // each entry bundles attire + a fitting backdrop so the look stays coherent.
   const PORTRAIT_CHARACTERS = [
     'a stern judge in black judicial robes and a flat velvet cap, seated before dark oak panelling',
     'a priest in a black cassock and white clerical collar, in a candlelit stone chapel',
@@ -66,23 +44,21 @@
     'a young squire in a quilted doublet and feathered cap, against a pale grey-blue sky',
   ];
 
-  // Deterministic pick per player index so re-renders stay stable and two adjacent
-  // players rarely collide (the offset spreads them across the list).
+  // Deterministic per index so re-renders stay stable; the *7 offset spreads adjacent
+  // players across the list so they rarely collide.
   function characterFor(index) {
     return PORTRAIT_CHARACTERS[((index * 7) % PORTRAIT_CHARACTERS.length + PORTRAIT_CHARACTERS.length) % PORTRAIT_CHARACTERS.length];
   }
 
-  // PuLID generates a fresh scene around the locked face, so the prompt is a
-  // positive *description* of the whole portrait (not an edit instruction). The face
-  // itself comes from the embedding — we just describe the costume, framing and style.
+  // A description of the whole portrait (not an edit instruction) — PuLID paints the
+  // scene around the locked face, so we only describe costume, framing and style.
   function portraitPrompt(index) {
     return 'A 16th-century Renaissance oil portrait of ' + characterFor(index) + '. ' +
       'Head-and-shoulders close-up, soft warm lighting, muted period colour, ' +
       'painted in the style of an old master, fine detail.';
   }
 
-  // Steers the generation away from the failure modes that read as "not them" —
-  // distortion, extra/altered faces, cartoonish output.
+  // Steers away from the failure modes that read as "not them".
   const PORTRAIT_NEGATIVE = 'different person, distorted face, deformed, disfigured, ' +
     'extra face, multiple faces, plastic skin, cartoon, anime, 3d render, blurry, lowres';
 
@@ -95,24 +71,22 @@
       desc: 'Each round, secretly mark a victim to assassinate — then cast your vote to deflect suspicion.' },
   };
 
-  // Mutable game state. `lastHolder` = who held the phone last, so the next round's
-  // pass resumes from the seat beside them (i.e. beside whoever was just revealed).
+  // Mutable game state. `lastHolder` = who held the phone last, so each round's pass
+  // resumes from the seat beside whoever was just revealed.
   const G = { setup: null, players: [], settings: {}, round: 0, lastHolder: null,
               order: [], kills: [], protects: [], votes: [], res: null };
 
-  // --- small helpers ---
   const esc = (s) => String(s)
     .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const gColor = (i) => COLORS[((i % COLORS.length) + COLORS.length) % COLORS.length];
   const gInitials = (name) => name.trim().slice(0, 2).toUpperCase() || '??';
-  // A dead player's avatar carries a fate class: banished -> greyed out, killed -> red tint.
   const fateClass = (p) => !p || p.alive ? '' : p.fate === 'killed' ? ' slain' : ' banished';
   function gAvatar(name) {
     const i = G.players.findIndex((p) => p.name === name);
     const p = i >= 0 ? G.players[i] : null;
     const fate = fateClass(p);
     if (p && p.photo) {
-      // data-player + .enhancing let the background portrait swap in live (see swapAvatar).
+      // data-player lets the generated portrait swap in live (see swapAvatar).
       const cls = (p.enhancing ? 'avatar enhancing' : 'avatar') + fate;
       return `<span class="${cls}" data-player="${i}"><img class="avatar-img" src="${p.photo}" alt=""></span>`;
     }
@@ -124,9 +98,9 @@
     if (r === 'guardian') return 'the <strong style="color:#86a6d0">Guardian</strong>';
     return 'one of the <strong style="color:var(--green)">Virtuous</strong>';
   }
-  // Uncoloured form for use on the parchment card face (the big label carries the colour).
+  // Uncoloured form for the parchment card face (the big label carries the colour).
   const plainRoleWord = (r) => r === 'assassin' ? 'an Assassin' : r === 'guardian' ? 'the Guardian' : 'one of the Virtuous';
-  // Alive players in seating order, starting from the seat AFTER `startName` (wraps).
+  // Alive players in seating order, starting from the seat after `startName` (wraps).
   function aliveOrderFrom(startName) {
     const n = G.players.length;
     let start = G.players.findIndex((p) => p.name === startName);
@@ -137,15 +111,14 @@
     }
     return out;
   }
-  // Commit an elimination (deferred from resolveRound so the portrait stays coloured
-  // through the vote reveal, then animates to grey at its own reveal screen).
-  // `deathOrder` is a monotonic counter so the final screen can list the fallen newest-first.
+  // Commit an elimination — deferred from resolveRound so the portrait stays coloured
+  // through the vote reveal, then drains to grey at its own reveal. `deathOrder` lets
+  // the final screen list the fallen newest-first.
   let deathSeq = 0;
   const markDead = (name, fate) => { const p = G.players.find((x) => x.name === name); if (p) { p.alive = false; p.fate = fate; p.deathOrder = ++deathSeq; } };
   const alivePlayers = () => G.players.filter((p) => p.alive);
   const aliveNames = () => alivePlayers().map((p) => p.name);
   const defaultNames = (k) => Array.from({ length: k }, (_, i) => `Player ${i + 1}`);
-  // Debate countdown shown with the hourglass (seconds). Players can skip it any time.
   const DEBATE_SECONDS = 60;
   const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
@@ -159,8 +132,8 @@
   ];
   const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-  // Soft two-note bell when the debate timer runs out. Synthesised via Web Audio so
-  // there's no asset to ship; silently no-ops if audio is unavailable or blocked.
+  // Soft two-note bell when the debate timer runs out — synthesised so there's no
+  // asset to ship; no-ops if audio is unavailable or blocked.
   let _audioCtx;
   function playChime() {
     try {
@@ -189,9 +162,9 @@
   // Privacy gate: "Pass the phone to X" with a single "I'm X" button. The private
   // screen only renders once the recipient confirms — nothing leaks while passing.
   function gate(who, then, opts = {}) {
-    G.lastHolder = who; // whoever takes the phone is now the latest holder
-    // Show their avatar so the table knows who to hand it to — but only once they
-    // have an identity (named / has a token); before that, fall back to the 📱.
+    G.lastHolder = who;
+    // Show their avatar to hand-off to, but only once they have an identity
+    // (named / has a token); before that, fall back to the 📱.
     const p = G.players.find((x) => x.name === who);
     const head = (p && (p.photo || p.named))
       ? `<div class="gate-avatar">${gAvatar(who)}</div>`
@@ -207,9 +180,7 @@
     app.querySelector('#go').onclick = then;
   }
 
-  // A "choose a player" screen. `emoji` is a big banner icon so a player doing two
-  // selections in a turn can tell at a glance which action they're on.
-  // A 2-step "Vote › Special" progress hint for roles that act after voting.
+  // A 2-step "Vote › Special" hint for roles that act after voting.
   // steps = { labels: ['Vote', 'Protect'], active: 0 }.
   function stepperHTML(steps) {
     if (!steps) return '';
@@ -238,8 +209,7 @@
       ${skipLabel ? `<button class="btn secondary" id="skip">${esc(skipLabel)}</button>` : ''}
       <div class="spacer"></div>
     `);
-    // Select a player first, then tap the CTA to commit. The CTA stays disabled
-    // until a pick is made so nobody can advance without choosing.
+    // CTA stays disabled until a player is picked.
     let selected = null;
     const confirmBtn = app.querySelector('#confirm');
     app.querySelectorAll('.pick').forEach((b) => {
@@ -254,7 +224,6 @@
     if (skipLabel) app.querySelector('#skip').onclick = () => onPick(null);
   }
 
-  // ---------- Setup ----------
   function setup() {
     if (!G.setup) G.setup = { count: 6, suspense: true, selfie: false, replicateToken: '' };
     const s = G.setup;
@@ -305,8 +274,8 @@
     const tok = app.querySelector('#rep-token');
     if (tok) tok.oninput = (e) => { s.replicateToken = e.target.value; };
     app.querySelector('#deal').onclick = () => {
-      // Players are dealt with placeholder seat names; each one renames themselves
-      // when the phone reaches them on the first pass (see nameStep / reveal).
+      // Dealt with placeholder seat names; each player renames themselves on the
+      // first pass (see nameStep / reveal).
       G.players = Engine.dealRoles(defaultNames(s.count));
       G.players.forEach((p) => { p.named = false; });
       G.settings = { suspense: s.suspense, selfie: s.selfie, replicateToken: s.replicateToken.trim() };
@@ -315,22 +284,18 @@
     };
   }
 
-  // ---------- Secret role reveal (pass & play) ----------
   function reveal(i) {
     if (i >= G.players.length) { G.round = 1; return roundIntro(); }
     const p = G.players[i];
-    // First pass: the player hasn't named themselves yet, so the gate refers to the
-    // seat ("the next player") rather than a name. They type their name, then (if
-    // selfies are on) snap a token, then see their role.
+    // First pass: name, then (if selfies are on) a token, then the role reveal.
     gate(p.name, () => nameStep(i), {
       sub: 'Hand it over before tapping — then type your name.',
       btn: 'I’ve got it',
     });
   }
 
-  // Each player types their own name when the phone reaches them. The typed name
-  // replaces the seat placeholder everywhere (state is keyed by name), so it must be
-  // non-empty and unique — we fall back to / disambiguate against the seat label.
+  // State is keyed by name, so the typed name (which replaces the seat placeholder)
+  // must be non-empty and unique.
   function nameStep(i) {
     const p = G.players[i];
     render(`
@@ -354,22 +319,18 @@
     go.onclick = () => {
       let nm = input.value.trim();
       if (!nm || taken(nm)) return;
-      // Keep lastHolder pointing at this player after the rename (the gate set it to
-      // the seat placeholder), so the round's pass resumes from the right seat.
+      // Carry lastHolder across the rename (the gate set it to the seat placeholder).
       if (G.lastHolder === p.name) G.lastHolder = nm;
       p.name = nm;
       p.named = true;
-      // With selfie avatars on, the player snaps their token before seeing their role.
       G.settings.selfie ? captureSelfie(nm, () => revealCard(i)) : revealCard(i);
     };
   }
 
-  // ---------- Selfie avatars (optional; photos stay in memory only) ----------
   // Crop the live camera frame to a centred square and mirror it like a real selfie.
   function grabSquare(video) {
-    // Capture large + high-quality: Kontext preserves likeness far better with
-    // more face pixels to anchor to, so we keep a 768px square at q0.92. The token
-    // is displayed small, but the full-res copy is what gets sent for enhancement.
+    // Large + high-quality (768px, q0.92): more face pixels preserve likeness better
+    // when the full-res copy is sent for enhancement, even though the token shows small.
     const size = 768;
     const c = document.createElement('canvas');
     c.width = size; c.height = size;
@@ -382,7 +343,7 @@
   }
 
   function captureSelfie(name, then) {
-    // No camera available -> quietly fall back to an initials token.
+    // No camera -> fall back to an initials token.
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return then();
     render(`
       <p class="eyebrow center" style="margin-top:6px">Selfie · ${esc(name)}</p>
@@ -425,9 +386,8 @@
     app.querySelector('#retake').onclick = () => captureSelfie(name, then);
   }
 
-  // Fire-and-forget: if a Replicate token was given, paint the selfie into a period
-  // portrait in the background and swap it in when ready. The raw selfie is always the
-  // fallback — any failure, timeout, or missing token simply leaves it untouched.
+  // Fire-and-forget: with a token, paint the selfie into a portrait and swap it in when
+  // ready. Any failure or missing token just leaves the raw selfie in place.
   function enhancePortrait(p) {
     const token = G.settings.replicateToken;
     if (!token || !p.photo) return;
@@ -440,9 +400,8 @@
     const selfie = p.photo; // capture now in case the player retakes later
     const prompt = portraitPrompt(G.players.indexOf(p));
 
-    // PuLID input: `main_face_image` is the face to lock onto; identity_scale controls
-    // how hard the identity is enforced (see the dial above). generation_mode 'fidelity'
-    // favours likeness over stylisation; num_samples: 1 keeps us to a single output.
+    // main_face_image is the face to lock onto; generation_mode 'fidelity' favours
+    // likeness over stylisation.
     runReplicate(token, {
       version: PORTRAIT_VERSION,
       input: {
@@ -464,7 +423,7 @@
         return loadImage(url);
       })
       .then((dataUrl) => {
-        // Ignore if the player retook the photo while we were generating.
+        // Ignore if the player retook the photo while generating.
         if (p.photo !== selfie) return;
         p.photo = dataUrl;
         swapAvatar(p.name, dataUrl);
@@ -473,11 +432,9 @@
       .finally(() => { p.enhancing = false; markEnhancing(p.name, false); });
   }
 
-  // ---- Replicate client (talks to the transparent CORS proxy) ----
-  // The proxy forwards whatever /v1/* path we hit and injects the token, so the
-  // client owns the full contract: create a prediction, then poll it to a terminal
-  // state. `Prefer: wait` lets the create call return a finished result in one shot
-  // when the model is warm; otherwise we poll the prediction's own get URL.
+  // The proxy injects the token; the client owns the contract: create a prediction,
+  // then poll to a terminal state. `Prefer: wait` can return a finished result in one
+  // shot when the model is warm; otherwise we poll the prediction's get URL.
   function runReplicate(token, createBody) {
     const headers = { 'Content-Type': 'application/json', 'X-Replicate-Token': token, 'Prefer': 'wait' };
     return fetch(PORTRAIT_PROXY_URL + '/v1/predictions', {
@@ -492,7 +449,7 @@
     if (done(pred.status) || tries <= 0) return pred;
     const getUrl = pred && pred.urls && pred.urls.get;
     if (!getUrl) return pred;
-    // The get URL is an absolute api.replicate.com URL; route it back through the proxy.
+    // getUrl is an absolute api.replicate.com URL; route it back through the proxy.
     const proxied = PORTRAIT_PROXY_URL + new URL(getUrl).pathname;
     return new Promise((resolve) => setTimeout(resolve, 3000))
       .then(() => fetch(proxied, { headers: { 'X-Replicate-Token': token } }))
@@ -500,8 +457,7 @@
       .then((next) => pollPrediction(next, token, tries - 1));
   }
 
-  // Fetch the generated image and inline it as a data URL so the avatar keeps working
-  // even after Replicate's short-lived output URL expires.
+  // Inline the generated image as a data URL so it survives Replicate's short-lived URL.
   function loadImage(url) {
     return fetch(url)
       .then((r) => (r.ok ? r.blob() : Promise.reject(new Error('image ' + r.status))))
@@ -513,8 +469,8 @@
       }));
   }
 
-  // Live-patch any avatar <img> for this player on the current screen (later scenes
-  // pick up the new p.photo automatically on their next render()).
+  // Live-patch this player's avatar on the current screen; later screens pick up the
+  // new p.photo on their next render().
   function swapAvatar(name, src) {
     const i = G.players.findIndex((x) => x.name === name);
     document.querySelectorAll(`.avatar[data-player="${i}"] .avatar-img`).forEach((img) => {
@@ -560,7 +516,6 @@
     next.onclick = () => { if (!next.disabled) reveal(i + 1); };
   }
 
-  // ---------- A round: one pass around the table ----------
   function roundIntro() {
     render(`
       <div class="spacer"></div>
@@ -578,7 +533,7 @@
       <button class="btn" id="next">Skip &amp; pass the phone around</button>
     `, { targetSelector: '#next' });
 
-    // Tick the debate clock down; it's purely ambient — the button always proceeds.
+    // The clock is ambient; the button always proceeds.
     let left = DEBATE_SECONDS;
     const tEl = app.querySelector('#timer');
     const iv = setInterval(() => {
@@ -596,7 +551,7 @@
 
     app.querySelector('#next').onclick = () => {
       clearInterval(iv);
-      // Resume beside whoever last held the phone (the player just revealed).
+      // Resume beside whoever last held the phone.
       G.order = aliveOrderFrom(G.lastHolder);
       G.kills = []; G.protects = []; G.votes = []; G.revoted = false; G.runoff = null;
       turn(0);
@@ -608,21 +563,18 @@
     gate(G.order[i].name, () => actFor(i));
   }
 
-  // The current player's private turn. Everyone votes first; the Assassin and
-  // Guardian then take their secret action (a 2-step "Vote › Special" hint shows
-  // this progression up top). Plain Virtuous players just vote.
+  // A private turn: everyone votes, then the Assassin/Guardian take their secret
+  // action (step 2). Plain Virtuous players just vote.
   function actFor(i) {
     const p = G.order[i];
-    // The label for this role's special step, or null if they have none.
     const specialLabel = p.role === 'assassin' ? 'Assassinate'
       : p.role === 'guardian' ? 'Protect' : null;
     const steps = specialLabel ? { labels: ['Vote', specialLabel], active: 0 } : null;
-    // After voting: special roles do their action (step 2), others move on.
     const afterVote = specialLabel ? () => specialStep(i) : () => turn(i + 1);
     voteStep(i, afterVote, steps);
   }
 
-  // The Assassin's strike or the Guardian's shield — taken after this player votes.
+  // The Assassin's strike or the Guardian's shield, after this player votes.
   function specialStep(i) {
     const p = G.order[i];
     if (p.role === 'assassin') {
@@ -644,11 +596,10 @@
     }
   }
 
-  // The vote screen. `next(i+1)` advances; for special roles it instead chains into
-  // their action step. `steps` shows the 2-step hint (omitted for plain Virtuous).
+  // `next(i+1)` advances (special roles chain into their action step instead).
   function voteStep(i, next = (j) => turn(j), steps = null) {
     const p = G.order[i];
-    // On a re-vote the choice is restricted to the players who were tied (the runoff).
+    // On a re-vote the choice is restricted to the tied players (the runoff).
     const pool = (G.revoted && G.runoff && G.runoff.length) ? G.runoff : aliveNames();
     const options = pool.filter((n) => n !== p.name);
     chooseScene({
@@ -662,22 +613,18 @@
     });
   }
 
-  // ---------- Resolution ----------
-  // Draws aren't allowed. On a first split vote the table debates and votes again
-  // (a runoff between the tied players); a second split is broken by a random
-  // banishment (forceBanish on the re-vote).
+  // A first split vote triggers a runoff between the tied players; a second split is
+  // broken by a random banishment (forceBanish on the re-vote).
   function resolveRound() {
     const plan = Engine.resolveRound({ players: G.players, kills: G.kills,
       protects: G.protects, votes: G.votes, forceBanish: G.revoted });
-    // Deaths are NOT applied yet — players stay coloured through the vote reveal.
-    // Each elimination is committed at its own reveal (showBanish / dawn), where the
-    // portrait animates from colour to grey. See markDead().
+    // Deaths aren't applied yet — committed at each elimination's own reveal (see
+    // markDead) so players stay coloured through the vote reveal.
     G.res = plan;
     return revealVotesIntro();
   }
 
-  // Decided only AFTER every ballot has been revealed, so the reveal isn't spoiled:
-  // a first-round split sends the tied players to a runoff; otherwise, the verdict.
+  // Decided only after every ballot is revealed, so the reveal isn't spoiled.
   function afterVoteReveal() {
     if (!G.res.banished && !G.revoted && G.votes.some((v) => v.choice)) {
       return deadlockIntro();
@@ -685,8 +632,7 @@
     return showBanish();
   }
 
-  // The first vote tied. Announce the deadlock, let the table debate again, then
-  // re-collect everyone's vote — but only between the tied players (the runoff).
+  // First vote tied: debate again, then re-collect votes only between the tied players.
   function deadlockIntro() {
     G.revoted = true;
     G.runoff = Engine.tally(G.votes.map((v) => v.choice)).leaders.slice();
@@ -705,14 +651,14 @@
     app.querySelector('#next').onclick = () => revoteTurn(0);
   }
 
-  // Re-vote pass: only collect votes, skipping the role actions (already done).
+  // Re-vote pass: collect votes only, skipping the already-done role actions.
   function revoteTurn(i) {
     if (i >= G.order.length) return resolveRound();
     gate(G.order[i].name, () => voteStep(i, revoteTurn));
   }
 
-  // After everyone has voted, a reveal phase shows who voted for whom — never a
-  // silent anonymous tally. Suspense mode chooses the card pass-around vs all-at-once.
+  // Always show who voted for whom — never a silent tally. Suspense mode picks the
+  // card pass-around over the all-at-once list.
   function revealVotesIntro() {
     render(`
       <div class="spacer"></div>
@@ -727,7 +673,6 @@
     app.querySelector('#next').onclick = () => (G.settings.suspense ? ballotReveal(0) : voteRevealAll());
   }
 
-  // All ballots on one screen.
   function voteRevealAll() {
     const rows = G.votes.map((v) => `
       <div class="vote-row">${gAvatar(v.voter)}<span class="vr-name">${esc(v.voter)}</span>
@@ -742,8 +687,7 @@
     app.querySelector('#next').onclick = () => afterVoteReveal();
   }
 
-  // Card pass-around: hand the phone to each voter, who flips their own ballot
-  // to reveal it to the table — just like the secret-role reveal at the start.
+  // Card pass-around: each voter flips their own ballot for the table.
   function ballotReveal(i) {
     if (i >= G.votes.length) return afterVoteReveal();
     gate(G.votes[i].voter, () => ballotCard(i));
@@ -776,8 +720,7 @@
     next.onclick = () => { if (!next.disabled) ballotReveal(i + 1); };
   }
 
-  // A face-down card the just-eliminated player flips to reveal their own role to
-  // the table — the app announces who fell, but never spoils their allegiance.
+  // The just-eliminated player flips a face-down card to reveal their own role.
   function revealRoleCard(name, { eyebrow, title }, then) {
     const p = G.players.find((x) => x.name === name);
     const info = ROLE_INFO[p.role];
@@ -832,7 +775,7 @@
       <button class="btn" id="next">Pass the phone to ${esc(r.banished)}</button>
     `, { targetSelector: '#next' });
     app.querySelector('#next').onclick = () => {
-      markDead(r.banished, 'banished'); // commit now so later screens stay greyed
+      markDead(r.banished, 'banished'); // commit now so later screens stay grey
       gate(r.banished, () =>
         revealRoleCard(r.banished, { eyebrow: `Banished · round ${G.round}`, title: `${r.banished}, reveal yourself` }, afterBanishReveal));
     };
@@ -856,7 +799,7 @@
         <button class="btn" id="next">Pass the phone to ${esc(r.victim)}</button>
       `, { targetSelector: '#next' });
       app.querySelector('#next').onclick = () => {
-        markDead(r.victim, 'killed'); // commit now so later screens stay greyed
+        markDead(r.victim, 'killed'); // commit now so later screens stay grey
         gate(r.victim, () =>
           revealRoleCard(r.victim, { eyebrow: `Slain · round ${G.round}`, title: `${r.victim}, reveal yourself` }, proceedAfterRound));
       };
@@ -891,21 +834,18 @@
 
   function win(team) {
     const v = team === 'virtuous';
-    // The winning team: everyone who isn't an Assassin if the Virtuous won, else the Assassins.
     const isWinner = (p) => (v ? p.role !== 'assassin' : p.role === 'assassin');
     const isAssassin = (p) => p.role === 'assassin';
-    // Display order: winners first, then any assassin not already shown as a winner,
-    // then the rest ordered by how they fell — most recent death first, then the living.
+    // Winners first, then any remaining assassin, then the rest by recency of death.
     const sorted = G.players.slice().sort((a, b) => {
       const rank = (p) => isWinner(p) ? 0 : isAssassin(p) ? 1 : 2;
       const ra = rank(a), rb = rank(b);
       if (ra !== rb) return ra - rb;
-      // Within "the rest": newest death first; surviving non-winners (no deathOrder) last.
+      // Newest death first; the living (no deathOrder) last.
       const da = a.deathOrder || 0, db = b.deathOrder || 0;
       return db - da;
     });
-    // Per-player tint, mirroring the selection screens: gold for winners, red for the
-    // assassinated, dark for the banished, blue (shield) is not used here.
+    // Card tint: gold = winner, red = killed, dark = banished.
     const tintOf = (p) => isWinner(p) ? 'win' : p.fate === 'killed' ? 'kill' : p.fate === 'banished' ? 'vote' : '';
     const roster = sorted.map((p) => `
       <div class="pick selected pick-tint-${tintOf(p) || 'none'}">

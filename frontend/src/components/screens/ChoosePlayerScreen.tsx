@@ -13,8 +13,7 @@ import { SceneEmoji } from '../primitives/SceneEmoji';
 export interface ChoosePlayerScreenProps {
   /** 2-step "Vote › Special" hint for roles that act after voting. */
   steps?: { labels: string[]; active: number };
-  /** Big banner icon so a player doing two selections in a turn can tell at a
-   * glance which action they're on. */
+  /** Banner icon so a player making two selections in a turn knows which action they're on. */
   emoji?: string;
   eyebrow?: string;
   title: string;

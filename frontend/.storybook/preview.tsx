@@ -3,10 +3,8 @@ import type { ReactNode } from 'react';
 import type { Preview } from '@storybook/react-vite';
 import { LevaPanel, LevaStoreProvider, useCreateStore } from 'leva';
 
-// Self-hosted fonts (via @fontsource) so they render in offline/sandbox
-// screenshots instead of falling back to system serifs. Only the latin
-// subset and the weights the design system actually uses are pulled in:
-// Cinzel 500/600/700 (display) and EB Garamond regular + italic (body).
+// Self-hosted fonts (via @fontsource) so they render offline instead of
+// falling back to system serifs. Only the latin subset + weights in use.
 import '@fontsource/cinzel/latin-500.css';
 import '@fontsource/cinzel/latin-600.css';
 import '@fontsource/cinzel/latin-700.css';
@@ -16,35 +14,25 @@ import '@fontsource/eb-garamond/latin-400-italic.css';
 import '../src/styles/global.css';
 
 /**
- * Per-story leva wiring, done once for every story.
+ * Per-story leva wiring. Stories drive props from a leva panel instead of
+ * Storybook args (this project is Controls-addon-free). The store is created at
+ * the outermost decorator level so the panel renders outside every component
+ * decorator (FlipCard 3D transform, PhoneFrame clip) without a portal.
  *
- * Each story drives its props from a leva panel rather than from hardcoded
- * Storybook args (this project is intentionally Controls-addon-free). The store
- * is created here — at the outermost decorator level — so the panel renders
- * outside every component decorator (e.g. the FlipCard 3D transform, the
- * PhoneFrame clip) without needing a portal.
+ * `useCreateStore()` only resets on remount, so the consumer keys this wrapper
+ * on the story id to force a fresh store per story (otherwise values leak
+ * across navigation).
  *
- * `useCreateStore()` is `useMemo(() => new Store(), [])`, so it only resets when
- * this component remounts. A global decorator would otherwise be reused across
- * story navigation and leak control values between stories, so the consumer
- * keys this wrapper on the story id (see `decorators` below) to force a fresh
- * store per story — satisfying "the leva data gets wiped out on unmount".
- *
- * Stories read this store back via leva's `useStoreContext()` and pass it to
- * `useControls(schema, { store })` — leva's `useControls` does not pick up the
- * context store on its own.
+ * Stories read the store back via `useStoreContext()` and pass it to
+ * `useControls(schema, { store })` — `useControls` won't pick up the context
+ * store on its own.
  */
 function LevaStory({ children }: { children: ReactNode }) {
   const store = useCreateStore();
   return (
     <LevaStoreProvider store={store}>
-      {/* leva's native floating panel: fixed top-right and draggable by its
-          title bar. Rendered at this outermost decorator level it has no
-          transformed ancestor (FlipCard / PhoneFrame live inside the story),
-          so it needs no portal or manual positioning. */}
       <LevaPanel store={store} />
-      {/* Replicates the static app's page <body>: dark backdrop, Garamond body
-          text in warm parchment, content centred at the top. */}
+      {/* Replicates the static app's page <body> */}
       <div className="flex min-h-screen w-full flex-col items-center bg-[#070504] p-6 font-body text-parchment">
         {children}
       </div>
@@ -54,8 +42,7 @@ function LevaStory({ children }: { children: ReactNode }) {
 
 const preview: Preview = {
   decorators: [
-    // key={context.id} remounts the wrapper on every story change, so
-    // `useCreateStore` hands back a fresh, isolated store each time.
+    // key={context.id} remounts the wrapper per story for a fresh store.
     (Story, context) => (
       <LevaStory key={context.id}>
         <Story />

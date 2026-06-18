@@ -25,7 +25,6 @@ export const Playground: StoryObj = {
   render: () => {
     const store = useStoreContext();
     const { aspect } = useControls({ aspect: { options: ASPECT_OPTIONS } }, { store });
-    // Tap the face-down card to flip it.
     const [flipped, setFlipped] = useState(false);
     return (
       <FlipCard

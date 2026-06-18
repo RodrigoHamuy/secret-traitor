@@ -12,7 +12,6 @@ export const Playground: StoryObj = {
   render: () => {
     const store = useStoreContext();
     const { min, max } = useControls({ min: 3, max: 12 }, { store });
-    // Count is click-driven via the +/− buttons; min/max bound the steppers.
     const [count, setCount] = useState(6);
     return (
       <PlayerCountStepper

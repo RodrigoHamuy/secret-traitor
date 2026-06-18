@@ -18,7 +18,6 @@ export const Playground: StoryObj = {
       },
       { store },
     );
-    // Checked state stays click-driven — toggle the row to see both states.
     const [checked, setChecked] = useState(false);
     return (
       <OptionRow

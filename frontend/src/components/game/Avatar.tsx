@@ -2,12 +2,11 @@ import { cx } from '../../lib/cx';
 
 export interface AvatarData {
   name: string;
-  /** Selfie / portrait image; falls back to an initials token when absent. */
+  /** Portrait image; falls back to an initials token when absent. */
   photoUrl?: string;
   /** Initials-token background; derived from the name when not given. */
   color?: string;
-  /** A dead player's avatar carries their fate: banished → greyed out,
-   * slain → greyed out with a blood-red tint. */
+  /** Dead player's fate: banished → greyed out, slain → greyed + blood tint. */
   fate?: 'banished' | 'slain';
   /** Gilt shimmer while the selfie is repainted into a period portrait. */
   enhancing?: boolean;
@@ -18,8 +17,7 @@ export interface AvatarProps extends AvatarData {
   size?: 'xs' | 'sm' | 'xl' | 'fill';
   /** Extra classes — square `fill` contexts set their own radius and initials size. */
   className?: string;
-  /** When the avatar carries a fate, animate the drain instead of showing it
-   * statically (the dawn / banishment reveal). */
+  /** Animate the fate drain instead of showing it statically (dawn / banishment reveal). */
   animateFate?: boolean;
 }
 

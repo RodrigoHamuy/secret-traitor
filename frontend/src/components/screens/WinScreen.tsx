@@ -17,8 +17,7 @@ export interface RosterEntry {
   /** Role tag colour (on-dark palette), e.g. var(--color-virtue). */
   roleColor: string;
   winner: boolean;
-  /** Per-card tint mirroring the selection screens: gold for winners, red for
-   * the assassinated, dark for the banished. */
+  /** Per-card tint: gold = winner, red = assassinated, dark = banished. */
   tint?: 'win' | 'kill' | 'vote';
 }
 
