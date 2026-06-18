@@ -13,7 +13,6 @@ export interface DeadlockScreenProps {
   onNext?: () => void;
 }
 
-/** The first vote tied: announce the deadlock before the runoff. */
 export function DeadlockScreen({ tiedNames, onNext }: DeadlockScreenProps) {
   return (
     <Screen

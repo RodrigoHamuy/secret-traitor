@@ -7,7 +7,6 @@ export interface SceneEmojiProps {
   className?: string;
 }
 
-/** Big sepia-toned banner emoji that headlines a scene. */
 export function SceneEmoji({ children, className }: SceneEmojiProps) {
   return (
     <div

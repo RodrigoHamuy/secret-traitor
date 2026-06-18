@@ -10,15 +10,14 @@ import { SceneEmoji } from '../primitives/SceneEmoji';
 
 export interface GateScreenProps {
   playerName: string;
-  /** The recipient's avatar — omit before they have an identity (📱 fallback). */
+  /** Omit before the recipient has an identity (📱 fallback). */
   avatar?: AvatarData;
   sub?: string;
   buttonLabel?: string;
   onConfirm?: () => void;
 }
 
-/** Privacy gate: "Pass the phone to X" — the private screen only renders once
- * the recipient confirms, so nothing leaks while passing. */
+// Privacy gate: the private screen renders only after the recipient confirms.
 export function GateScreen({
   playerName,
   avatar,

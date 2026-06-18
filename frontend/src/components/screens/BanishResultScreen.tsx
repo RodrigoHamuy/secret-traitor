@@ -9,17 +9,14 @@ import { Heading } from '../primitives/Heading';
 import { SceneEmoji } from '../primitives/SceneEmoji';
 
 export interface BanishResultScreenProps {
-  /** banished = clear majority · tieBroken = the re-vote tied again and lots
-   * were drawn · noMajority = a split first vote, no one falls. */
+  /** banished = clear majority · tieBroken = re-vote tied again, lots drawn · noMajority = split first vote, no one falls. */
   variant: 'banished' | 'tieBroken' | 'noMajority';
-  /** The banished player (not used for noMajority). */
+  /** Not used for noMajority. */
   banished?: AvatarData;
-  /** "Pass the phone to X" / "Then, under cover of dark…". */
   ctaLabel: string;
   onNext?: () => void;
 }
 
-/** The verdict after the ballots are revealed. */
 export function BanishResultScreen({ variant, banished, ctaLabel, onNext }: BanishResultScreenProps) {
   return (
     <Screen

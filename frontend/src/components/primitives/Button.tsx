@@ -4,9 +4,9 @@ import { cx } from '../../lib/cx';
 
 export interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
   variant?: 'primary' | 'secondary' | 'ghost';
-  /** The "what to tap" highlight: candleglow pulse. */
+  /** "What to tap" candleglow-pulse highlight. */
   target?: boolean;
-  /** Leading emoji. Equal-width side columns keep the label centred as if there were no emoji. */
+  /** Leading emoji; equal-width side columns keep the label centred. */
   emoji?: string;
 }
 
@@ -17,7 +17,6 @@ const VARIANTS = {
   ghost: 'border border-line bg-[#231a10] text-parchment',
 };
 
-/** Pressed gold plaque button. */
 export function Button({
   variant = 'primary',
   target = false,

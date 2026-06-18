@@ -2,11 +2,11 @@ import { cx } from '../../lib/cx';
 
 export interface AvatarData {
   name: string;
-  /** Portrait image; falls back to an initials token when absent. */
+  /** Falls back to an initials token when absent. */
   photoUrl?: string;
   /** Initials-token background; derived from the name when not given. */
   color?: string;
-  /** Dead player's fate: banished → greyed out, slain → greyed + blood tint. */
+  /** banished → greyed out; slain → greyed + blood tint. */
   fate?: 'banished' | 'slain';
   /** Gilt shimmer while the selfie is repainted into a period portrait. */
   enhancing?: boolean;
@@ -15,9 +15,8 @@ export interface AvatarData {
 export interface AvatarProps extends AvatarData {
   /** xs 28px (vote rows) · sm 36px (default) · xl 112px (gate) · fill (square cards). */
   size?: 'xs' | 'sm' | 'xl' | 'fill';
-  /** Extra classes — square `fill` contexts set their own radius and initials size. */
   className?: string;
-  /** Animate the fate drain instead of showing it statically (dawn / banishment reveal). */
+  /** Animate the fate drain instead of showing it statically. */
   animateFate?: boolean;
 }
 
@@ -39,7 +38,6 @@ const SIZES = {
   fill: 'aspect-square w-full rounded-lg text-[40px]',
 };
 
-/** Gold-rimmed medallion avatar: the player's portrait, or an initials token. */
 export function Avatar({
   name,
   photoUrl,

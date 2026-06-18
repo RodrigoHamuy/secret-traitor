@@ -16,7 +16,6 @@ const TONES = {
   blood: 'text-blood',
 };
 
-/** Main heading — engraved Roman capitals with a candlelit glow. */
 export function TitleHeading({ children, tone = 'gold', center = false, className }: TitleHeadingProps) {
   return (
     <h1

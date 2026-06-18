@@ -7,7 +7,6 @@ export interface VoteRowProps {
   choice: AvatarData;
 }
 
-/** One "voter → choice" line in the all-ballots-at-once list. */
 export function VoteRow({ voter, choice }: VoteRowProps) {
   return (
     <div className="flex items-center justify-center gap-2 font-display text-[13px] font-semibold">

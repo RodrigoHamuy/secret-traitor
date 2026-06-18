@@ -16,12 +16,10 @@ export interface BallotRevealScreenProps {
   choice: AvatarData;
   flipped: boolean;
   onFlip?: () => void;
-  /** "Show everyone, then pass on" — or "See the result" on the last ballot. */
   ctaLabel: string;
   onNext?: () => void;
 }
 
-/** Suspense mode: each voter flips their own ballot for the table. */
 export function BallotRevealScreen({
   index,
   total,

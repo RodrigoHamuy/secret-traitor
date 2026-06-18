@@ -6,12 +6,10 @@ export type Role = 'virtuous' | 'guardian' | 'assassin';
 
 export interface RoleCardFrontProps {
   role: Role;
-  /** Role glyph and label; defaults match the game's roles. */
   glyph?: string;
   label?: string;
-  /** Card body — the role description, or the elimination confirmation line. */
+  /** Role description, or the elimination confirmation line. */
   description: ReactNode;
-  /** Names of this Assassin's accomplices, shown under the description. */
   fellowAssassins?: string[];
 }
 
@@ -21,7 +19,6 @@ const ROLES: Record<Role, { glyph: string; label: string; color: string }> = {
   assassin: { glyph: '🗡️', label: 'ASSASSIN', color: 'text-blood' },
 };
 
-/** Parchment front of the secret-role card. */
 export function RoleCardFront({ role, glyph, label, description, fellowAssassins }: RoleCardFrontProps) {
   const info = ROLES[role];
   return (

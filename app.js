@@ -25,8 +25,7 @@ function render(html, { hint, targetSelector } = {}) {
 }
 
 // Split the screen into a scrollable content area and a CTA footer pinned to the
-// bottom, so the buttons stay anchored (even with short content) and clear of the
-// on-screen keyboard.
+// bottom, kept clear of the on-screen keyboard.
 function layoutScreen() {
   if (typeof app.removeChild !== 'function') return; // non-DOM test stub: skip
   // Drop a trailing spacer; it would push the footer up.

@@ -13,12 +13,11 @@ import { SceneEmoji } from '../primitives/SceneEmoji';
 export interface ChoosePlayerScreenProps {
   /** 2-step "Vote › Special" hint for roles that act after voting. */
   steps?: { labels: string[]; active: number };
-  /** Banner icon so a player making two selections in a turn knows which action they're on. */
   emoji?: string;
   eyebrow?: string;
   title: string;
   sub?: string;
-  /** Tint applied to the chosen card: vote = dark, kill = red, shield = blue. */
+  /** vote = dark, kill = red, shield = blue. */
   tint?: 'vote' | 'kill' | 'shield';
   players: AvatarData[];
   selectedName?: string;
@@ -30,7 +29,6 @@ export interface ChoosePlayerScreenProps {
   onSkip?: () => void;
 }
 
-/** A "choose a player" screen: pick a card, then commit with the CTA. */
 export function ChoosePlayerScreen({
   steps,
   emoji,

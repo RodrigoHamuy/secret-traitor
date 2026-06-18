@@ -8,7 +8,6 @@ export interface PlayerCountStepperProps {
   onIncrement?: () => void;
 }
 
-/** Player-count stepper: − / "N players" / +. */
 export function PlayerCountStepper({
   count,
   min = 3,

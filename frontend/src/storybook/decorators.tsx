@@ -2,7 +2,7 @@ import type { Decorator } from '@storybook/react-vite';
 
 import { PhoneFrame } from '../components/layout/PhoneFrame';
 
-/** Renders a story inside the phone frame at handset size — used by screen stories. */
+/** Phone frame at handset size — used by screen stories. */
 export const withPhone: Decorator = (Story) => (
   <div className="h-[720px] w-[400px] max-w-full">
     <PhoneFrame>

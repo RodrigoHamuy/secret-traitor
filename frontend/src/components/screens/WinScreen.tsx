@@ -12,12 +12,10 @@ import { TitleHeading } from '../primitives/TitleHeading';
 
 export interface RosterEntry {
   avatar: AvatarData;
-  /** "VIRTUOUS" / "GUARDIAN" / "ASSASSIN". */
   roleLabel: string;
-  /** Role tag colour (on-dark palette), e.g. var(--color-virtue). */
   roleColor: string;
   winner: boolean;
-  /** Per-card tint: gold = winner, red = assassinated, dark = banished. */
+  /** gold = winner, red = assassinated, dark = banished. */
   tint?: 'win' | 'kill' | 'vote';
 }
 
@@ -28,7 +26,6 @@ export interface WinScreenProps {
   onPlayAgain?: () => void;
 }
 
-/** Game over: the verdict and the full roster with every role revealed. */
 export function WinScreen({ team, roster, onPlayAgain }: WinScreenProps) {
   const virtuous = team === 'virtuous';
   return (

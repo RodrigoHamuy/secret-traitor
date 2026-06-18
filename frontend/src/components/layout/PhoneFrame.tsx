@@ -4,7 +4,6 @@ export interface PhoneFrameProps {
   children: ReactNode;
 }
 
-/** Phone frame — dark leather with gold piping and a flickering candlelight glow. */
 export function PhoneFrame({ children }: PhoneFrameProps) {
   return (
     <div className="relative flex h-full w-full max-w-[400px] flex-col overflow-hidden rounded-[26px] border border-[#3a2c17] bg-[radial-gradient(120%_80%_at_50%_-10%,rgba(201,162,74,.16),transparent_60%),linear-gradient(180deg,var(--color-chamber-from),var(--color-chamber-to))] shadow-phone">

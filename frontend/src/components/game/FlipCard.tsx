@@ -4,18 +4,17 @@ import { cx } from '../../lib/cx';
 
 export interface FlipCardProps {
   flipped: boolean;
-  /** Fired when the face-down card is tapped (ignored once flipped). */
+  /** Ignored once flipped. */
   onFlip?: () => void;
   back: ReactNode;
   front: ReactNode;
-  /** role 3:4 (secret-role card) · ballot 4:5 (per-voter vote reveal). */
+  /** role 3:4 · ballot 4:5. */
   aspect?: 'role' | 'ballot';
 }
 
 const FACE =
   'absolute inset-0 flex flex-col items-center justify-center rounded-[14px] border border-gold-edge p-[26px] text-center backface-hidden shadow-face';
 
-/** 3D flip card — face-down until tapped, then turns to reveal the parchment front. */
 export function FlipCard({ flipped, onFlip, back, front, aspect = 'role' }: FlipCardProps) {
   return (
     <div className="my-auto perspective-[1200px]">

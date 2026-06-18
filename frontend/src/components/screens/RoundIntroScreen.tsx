@@ -9,20 +9,16 @@ import { Pill } from '../primitives/Pill';
 
 export interface RoundIntroScreenProps {
   round: number;
-  /** Debate prompt — a round-one teaser or "Debate aloud — who do you suspect?". */
   prompt: string;
-  /** Hourglass drain time in seconds. */
   durationSeconds: number;
-  /** Pre-formatted countdown, e.g. "1:00" — or "Time's up". */
+  /** Pre-formatted countdown, e.g. "1:00". */
   timerLabel: string;
   timeUp?: boolean;
   aliveCount: number;
-  /** "Skip & pass the phone around" while counting, "Pass the phone around" after. */
   ctaLabel: string;
   onNext?: () => void;
 }
 
-/** Round intro: the table debates aloud while the hourglass drains. */
 export function RoundIntroScreen({
   round,
   prompt,

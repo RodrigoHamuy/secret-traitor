@@ -3,11 +3,9 @@ import type { AvatarData } from './Avatar';
 import { Avatar } from './Avatar';
 
 export interface BallotCardFrontProps {
-  /** Who this ballot banishes — the portrait is the headline, name the caption. */
   choice: AvatarData;
 }
 
-/** Parchment front of a per-voter ballot card. */
 export function BallotCardFront({ choice }: BallotCardFrontProps) {
   return (
     <>
