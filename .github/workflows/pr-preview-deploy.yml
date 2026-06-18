@@ -103,13 +103,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
+      # Install the whole pnpm workspace from the single root lockfile, then build
+      # just the frontend package. Output still lands in frontend/storybook-static.
       - name: Build Storybook
-        working-directory: frontend
         run: |
           pnpm install --frozen-lockfile
-          pnpm build-storybook
+          pnpm --filter secret-traitor-frontend build-storybook
 
       - name: Stage Storybook
         run: |

@@ -1,0 +1,5 @@
+# pnpm workspace (monorepo) root.
+# Only `frontend` is an npm package today; the root static game and worker/ have
+# no package.json (worker/ deploys via wrangler). Add new packages here as they appear.
+packages:
+  - frontend
