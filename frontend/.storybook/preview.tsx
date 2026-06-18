@@ -12,11 +12,6 @@ import '@fontsource/eb-garamond/latin-400-italic.css';
 
 import '../src/styles/global.css';
 
-// Per-story leva store, created at the outermost decorator so the panel renders
-// outside component decorators (FlipCard 3D transform, PhoneFrame clip) without
-// a portal. Keyed on story id by the caller to reset per story. Stories read it
-// back via useStoreContext() and pass it to useControls(schema, { store }) —
-// useControls won't pick up the context store on its own.
 function LevaStory({ children }: { children: ReactNode }) {
   const store = useCreateStore();
   return (
