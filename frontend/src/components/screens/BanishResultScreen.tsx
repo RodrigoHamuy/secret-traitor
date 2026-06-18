@@ -11,7 +11,6 @@ import { SceneEmoji } from '../primitives/SceneEmoji';
 export interface BanishResultScreenProps {
   /** banished = clear majority · tieBroken = re-vote tied again, lots drawn · noMajority = split first vote, no one falls. */
   variant: 'banished' | 'tieBroken' | 'noMajority';
-  /** Not used for noMajority. */
   banished?: AvatarData;
   ctaLabel: string;
   onNext?: () => void;

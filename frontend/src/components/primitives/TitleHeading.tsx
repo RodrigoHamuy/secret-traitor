@@ -4,7 +4,6 @@ import { cx } from '../../lib/cx';
 
 export interface TitleHeadingProps {
   children: ReactNode;
-  /** Gold for the title screen; virtue/blood recolour it for the win screen. */
   tone?: 'gold' | 'virtue' | 'blood';
   center?: boolean;
   className?: string;

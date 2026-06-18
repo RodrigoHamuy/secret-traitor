@@ -1,5 +1,4 @@
 export interface CardBackProps {
-  /** 🤫 for role cards, 🗳️ for ballots. */
   glyph: string;
   label?: string;
 }

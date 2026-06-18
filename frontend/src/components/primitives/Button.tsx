@@ -4,9 +4,7 @@ import { cx } from '../../lib/cx';
 
 export interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
   variant?: 'primary' | 'secondary' | 'ghost';
-  /** "What to tap" candleglow-pulse highlight. */
   target?: boolean;
-  /** Leading emoji; equal-width side columns keep the label centred. */
   emoji?: string;
 }
 

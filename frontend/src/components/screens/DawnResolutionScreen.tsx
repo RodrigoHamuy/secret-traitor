@@ -11,7 +11,6 @@ import { SceneEmoji } from '../primitives/SceneEmoji';
 export interface DawnResolutionScreenProps {
   /** killed = strike landed · saved = Guardian's shield held · already = target already banished · none = no strike. */
   outcome: 'killed' | 'saved' | 'already' | 'none';
-  /** Not used for none. */
   victim?: AvatarData;
   ctaLabel: string;
   onNext?: () => void;

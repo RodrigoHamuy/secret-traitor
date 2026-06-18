@@ -10,7 +10,6 @@ import { Heading } from '../primitives/Heading';
 export interface RoleRevealScreenProps {
   eyebrow: string;
   title: string;
-  /** Typically a `<RoleCardFront>`. */
   front: ReactNode;
   flipped: boolean;
   onFlip?: () => void;

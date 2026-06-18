@@ -12,7 +12,6 @@ export interface NameEntryScreenProps {
   total: number;
   value: string;
   onChange?: (value: string) => void;
-  /** False while the name is empty or already taken. */
   canContinue?: boolean;
   onContinue?: () => void;
 }

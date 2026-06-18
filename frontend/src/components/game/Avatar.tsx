@@ -2,13 +2,9 @@ import { cx } from '../../lib/cx';
 
 export interface AvatarData {
   name: string;
-  /** Falls back to an initials token when absent. */
   photoUrl?: string;
-  /** Initials-token background; derived from the name when not given. */
   color?: string;
-  /** banished → greyed out; slain → greyed + blood tint. */
   fate?: 'banished' | 'slain';
-  /** Gilt shimmer while the selfie is repainted into a period portrait. */
   enhancing?: boolean;
 }
 
@@ -16,7 +12,6 @@ export interface AvatarProps extends AvatarData {
   /** xs 28px (vote rows) · sm 36px (default) · xl 112px (gate) · fill (square cards). */
   size?: 'xs' | 'sm' | 'xl' | 'fill';
   className?: string;
-  /** Animate the fate drain instead of showing it statically. */
   animateFate?: boolean;
 }
 

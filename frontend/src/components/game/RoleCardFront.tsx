@@ -8,7 +8,6 @@ export interface RoleCardFrontProps {
   role: Role;
   glyph?: string;
   label?: string;
-  /** Role description, or the elimination confirmation line. */
   description: ReactNode;
   fellowAssassins?: string[];
 }

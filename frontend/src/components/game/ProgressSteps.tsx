@@ -4,7 +4,6 @@ import { cx } from '../../lib/cx';
 
 export interface ProgressStepsProps {
   steps: string[];
-  /** Index of the current step; earlier steps render as done. */
   active: number;
 }
 

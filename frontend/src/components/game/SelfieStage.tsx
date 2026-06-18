@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 
 export interface SelfieStageProps {
-  /** The live `<video>` feed (mirrored) or a `<SelfiePreview>`. */
   children: ReactNode;
 }
 

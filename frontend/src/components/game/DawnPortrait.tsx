@@ -4,7 +4,6 @@ import { Avatar } from './Avatar';
 
 export interface DawnPortraitProps {
   avatar: AvatarData;
-  /** Omit for a spared player. */
   fate?: 'banished' | 'slain';
 }
 
