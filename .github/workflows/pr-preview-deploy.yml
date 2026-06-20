@@ -49,6 +49,29 @@ jobs:
           echo "frontend=secret-traitor-fe-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
           echo "storybook=secret-traitor-sb-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
 
+      # Build the Storybook from frontend/ BEFORE the wrangler deploys below. The
+      # cloudflare/wrangler-action steps run `npm i wrangler` in a directory without a
+      # package.json (worker/, fe-preview/), so npm walks up and injects wrangler into the
+      # root package.json — which would then make `pnpm install --frozen-lockfile` fail
+      # against the root lockfile. Installing the workspace first keeps the root
+      # package.json pristine for the frozen install. Output lands in frontend/storybook-static.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Build Storybook
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter secret-traitor-frontend build-storybook
+
       # Rewrite the Worker name in worker/wrangler.toml so this PR deploys to its own
       # dedicated Worker (and so the REPLICATE_API_TOKEN secret lands on the right one).
       - name: Name the backend Worker for this PR
@@ -92,26 +115,8 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: fe-preview
 
-      # Build the Storybook from frontend/ and serve it as a third assets-only Worker.
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      # Install the whole pnpm workspace from the single root lockfile, then build
-      # just the frontend package. Output still lands in frontend/storybook-static.
-      - name: Build Storybook
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm --filter secret-traitor-frontend build-storybook
-
+      # Serve the Storybook built earlier (frontend/storybook-static) as a third
+      # assets-only Worker.
       - name: Stage Storybook
         run: |
           mkdir -p sb-preview
