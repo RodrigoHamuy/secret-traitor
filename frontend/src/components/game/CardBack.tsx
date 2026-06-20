@@ -1,10 +1,8 @@
 export interface CardBackProps {
-  /** 🤫 for role cards, 🗳️ for ballots. */
   glyph: string;
   label?: string;
 }
 
-/** Face-down side of a flip card: a glowing glyph and a "Tap to reveal" prompt. */
 export function CardBack({ glyph, label = 'Tap to reveal' }: CardBackProps) {
   return (
     <>

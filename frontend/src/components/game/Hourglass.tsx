@@ -1,13 +1,10 @@
 export interface HourglassProps {
-  /** How long the sand takes to drain, in seconds. */
   durationSeconds: number;
 }
 
 const SAND = 'absolute inset-x-0 bottom-0 bg-linear-to-b from-gold-bright to-gold';
 const CAP = 'h-[7px] w-[78px] rounded-[4px] bg-linear-to-b from-gold-bright to-gold shadow-[0_1px_0_#5e4720]';
 
-/** Debate hourglass — the sand drains from the top bulb into the bottom one
- * over `durationSeconds`, with a faint glittering stream between them. */
 export function Hourglass({ durationSeconds }: HourglassProps) {
   return (
     <div className="relative mx-auto mt-[18px] mb-2 flex w-[78px] flex-col items-center">

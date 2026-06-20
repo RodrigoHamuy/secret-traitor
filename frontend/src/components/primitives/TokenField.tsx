@@ -5,11 +5,9 @@ import { TextInput } from './TextInput';
 import type { TextInputProps } from './TextInput';
 
 export interface TokenFieldProps extends TextInputProps {
-  /** Fine print shown under the masked input. */
   note?: ReactNode;
 }
 
-/** Masked API-token input with an explanatory note. */
 export function TokenField({ note, className, ...rest }: TokenFieldProps) {
   return (
     <div className="mt-0.5 mb-1">

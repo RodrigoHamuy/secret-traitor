@@ -7,8 +7,7 @@ import { withPhone } from '../../storybook/decorators';
 
 export default { title: 'Screens/SetupScreen', decorators: [withPhone] };
 
-// A fully interactive form — every field is driven by the screen's own controls
-// (stepper, checkboxes, token input), so there's nothing extra to drive via leva.
+// Fully interactive form — fields are driven by the screen's own controls, no leva.
 export const Playground: StoryObj = {
   render: () => {
     const [count, setCount] = useState(6);

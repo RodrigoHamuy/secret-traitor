@@ -4,7 +4,6 @@ import { cx } from '../../lib/cx';
 
 export type StepButtonProps = ComponentPropsWithoutRef<'button'>;
 
-/** Circular gold +/− button for the player-count stepper. */
 export function StepButton({ className, children, ...rest }: StepButtonProps) {
   return (
     <button

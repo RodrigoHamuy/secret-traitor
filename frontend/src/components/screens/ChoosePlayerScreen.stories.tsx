@@ -30,7 +30,6 @@ export const Playground: StoryObj = {
         },
         { store },
       );
-    // Selection stays click-driven.
     const [selected, setSelected] = useState<string | undefined>(undefined);
     return (
       <ChoosePlayerScreen

@@ -23,7 +23,6 @@ export const Playground: StoryObj = {
       },
       { store },
     );
-    // Click a card to select it.
     const [selected, setSelected] = useState<string | undefined>(PLAYERS[1].name);
     return (
       <PickGrid>

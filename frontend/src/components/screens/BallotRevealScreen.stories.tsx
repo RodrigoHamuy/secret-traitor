@@ -22,7 +22,6 @@ export const Playground: StoryObj = {
       },
       { store },
     );
-    // Tap the ballot to flip it.
     const [flipped, setFlipped] = useState(false);
     return (
       <BallotRevealScreen

@@ -13,7 +13,6 @@ export interface VoteRevealAllScreenProps {
   onNext?: () => void;
 }
 
-/** All ballots on one screen. */
 export function VoteRevealAllScreen({ votes, onNext }: VoteRevealAllScreenProps) {
   return (
     <Screen

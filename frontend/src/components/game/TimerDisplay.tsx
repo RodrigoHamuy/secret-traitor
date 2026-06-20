@@ -1,13 +1,11 @@
 import { cx } from '../../lib/cx';
 
 export interface TimerDisplayProps {
-  /** Pre-formatted time, e.g. "1:00" — or "Time's up". No internal ticking. */
+  /** Pre-formatted; no internal ticking. */
   label: string;
-  /** Time has run out: turns wax-seal red and pulses. */
   up?: boolean;
 }
 
-/** Ambient debate countdown shown under the hourglass. */
 export function TimerDisplay({ label, up = false }: TimerDisplayProps) {
   return (
     <p

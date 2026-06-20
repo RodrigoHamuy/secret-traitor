@@ -6,28 +6,24 @@
   <meta name="theme-color" content="#0c0805" />
   <title>Secret Traitor</title>
 
-  <!-- Period typography: engraved Roman capitals + Garamond body -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="app.css" />
 
-  <!-- Pure game logic, loaded before the UI that uses it -->
+  <!-- engine.js loads before the UI that uses it -->
   <script src="engine.js"></script>
 </head>
 <body>
-  <!-- Phone frame keeps it feeling like a mobile app on desktop too -->
   <div class="phone">
-    <main id="app" class="app"><!-- scenes render here --></main>
-    <!-- Instructional banner (used by the title only; hidden during play) -->
+    <main id="app" class="app"></main>
     <div id="hint" class="hint" hidden>
       <span class="hint-finger">☞</span>
       <span id="hint-text" class="hint-text"></span>
     </div>
   </div>
 
-  <!-- app.js: shared UI shell + title · game.js: the single-device game -->
   <script src="app.js"></script>
   <script src="game.js"></script>
 </body>

@@ -8,7 +8,6 @@ export interface EyebrowProps {
   className?: string;
 }
 
-/** Eyebrow — small engraved capitals above a heading. */
 export function Eyebrow({ children, center = false, className }: EyebrowProps) {
   return (
     <p

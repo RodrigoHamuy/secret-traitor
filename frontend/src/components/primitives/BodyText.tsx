@@ -8,7 +8,6 @@ export interface BodyTextProps {
   className?: string;
 }
 
-/** Body paragraph in warm parchment Garamond. */
 export function BodyText({ children, center = false, className }: BodyTextProps) {
   return (
     <p

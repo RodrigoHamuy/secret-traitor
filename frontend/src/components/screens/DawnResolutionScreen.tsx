@@ -9,17 +9,13 @@ import { Heading } from '../primitives/Heading';
 import { SceneEmoji } from '../primitives/SceneEmoji';
 
 export interface DawnResolutionScreenProps {
-  /** killed = the strike landed · saved = the Guardian's shield held ·
-   * already = the target had already been banished · none = no strike at all. */
+  /** killed = strike landed · saved = Guardian's shield held · already = target already banished · none = no strike. */
   outcome: 'killed' | 'saved' | 'already' | 'none';
-  /** The assassins' target (not used for none). */
   victim?: AvatarData;
-  /** "Pass the phone to X", "Continue", or "See the outcome". */
   ctaLabel: string;
   onNext?: () => void;
 }
 
-/** Dawn breaks: how the night's assassination resolved. */
 export function DawnResolutionScreen({ outcome, victim, ctaLabel, onNext }: DawnResolutionScreenProps) {
   return (
     <Screen

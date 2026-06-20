@@ -26,7 +26,6 @@ export const Playground: StoryObj = {
       },
       { store },
     );
-    // Tap the card to reveal it.
     const [flipped, setFlipped] = useState(false);
     return (
       <RoleRevealScreen

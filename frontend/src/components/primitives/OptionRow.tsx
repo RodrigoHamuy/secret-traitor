@@ -7,7 +7,6 @@ export interface OptionRowProps {
   description?: ReactNode;
 }
 
-/** Lobby option — themed checkbox row with a title and fine print. */
 export function OptionRow({ checked, onChange, title, description }: OptionRowProps) {
   return (
     <label className="mt-3.5 flex cursor-pointer items-start gap-3 rounded-[10px] border border-line bg-panel p-3.5 text-left">

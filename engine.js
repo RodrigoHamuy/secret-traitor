@@ -1,9 +1,6 @@
-/* ===== Secret Traitor — game engine =====
- * Pure, DOM-free game logic. Reused by single-device play now and online play later.
- * Exposed as window.Engine.
- */
+/* Secret Traitor — pure, DOM-free game logic (window.Engine). */
 (function () {
-  // Random integer helper + Fisher–Yates shuffle.
+  // Fisher–Yates shuffle.
   function shuffle(a) {
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -12,14 +9,14 @@
     return a;
   }
 
-  // Role counts by player total (mirrors the table in PLAN.md §2).
+  // Role counts by player total (see PLAN.md §2).
   function roleCounts(n) {
     const assassins = n >= 8 ? 2 : 1;
     const guardians = 1;
     return { assassins, guardians, virtuous: n - assassins - guardians };
   }
 
-  // Assign secret roles to a list of player names -> [{name, role, alive}].
+  // names -> [{name, role, alive}], roles dealt at random.
   function dealRoles(names) {
     const { assassins, guardians } = roleCounts(names.length);
     const roles = [];
@@ -30,7 +27,7 @@
     return names.map((name, i) => ({ name, role: roles[i], alive: true }));
   }
 
-  // Who has won, if anyone. Returns 'virtuous' | 'assassins' | null.
+  // -> 'virtuous' | 'assassins' | null.
   function winner(players) {
     const alive = players.filter((p) => p.alive);
     const assassins = alive.filter((p) => p.role === 'assassin').length;
@@ -40,8 +37,7 @@
     return null;
   }
 
-  // Tally an array of vote targets (names; null/undefined = abstain).
-  // Returns { counts, leaders, max, tie }.
+  // Tally vote targets (null/undefined = abstain) -> { counts, leaders, max, tie }.
   function tally(votes) {
     const counts = {};
     votes.forEach((v) => { if (v) counts[v] = (counts[v] || 0) + 1; });
@@ -54,17 +50,13 @@
     return { counts, leaders, max, tie: max === 0 || leaders.length !== 1 };
   }
 
-  // Resolve one combined round. Pure: does not mutate `state`; returns a plan.
+  // Resolve one round (pure; returns a plan, doesn't mutate `state`).
   //   state = { players:[{name,role,alive}], kills:[{by,target}],
   //             protects:[{by,target}], votes:[{voter,choice}] }
-  // Rules: tally votes -> banish. A banished Assassin's mark is cancelled (and if
-  // that ends the game, the strike never lands). A banished Guardian's shield is
-  // cancelled. Surviving Assassins' marks are tallied into one victim, who dies
-  // unless an active Guardian protects them.
-  //
-  // Draws aren't allowed. Normally a split vote (`vt.tie`) banishes no one and the
-  // caller re-runs the vote; pass `forceBanish: true` to break a remaining tie by
-  // banishing a random one of the tied leaders (used after a second deadlocked vote).
+  // Banishing an Assassin cancels their mark; banishing the Guardian cancels their
+  // shield. Surviving Assassins' marks resolve to one victim, who dies unless an
+  // active Guardian protects them. A split vote banishes no one and the caller
+  // re-votes; `forceBanish` breaks a second deadlock by banishing a random leader.
   function resolveRound(state) {
     const { players, kills = [], protects = [], votes = [], forceBanish = false } = state;
     const alive = {}, roleOf = {};
@@ -72,8 +64,8 @@
     const winnerNow = () => winner(players.map((p) => ({ role: p.role, alive: alive[p.name] })));
 
     const vt = tally(votes.map((v) => v.choice));
-    // A real tie (>1 leader, max>0) is broken randomly only when forced; an empty
-    // tally (max 0, all abstained) can never be forced into a banishment.
+    // A real tie is broken randomly only when forced; an all-abstain tally (max 0)
+    // can never be forced into a banishment.
     const banished = vt.tie
       ? (forceBanish && vt.max > 0 ? vt.leaders[Math.floor(Math.random() * vt.leaders.length)] : null)
       : vt.leaders[0];

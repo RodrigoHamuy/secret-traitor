@@ -2,6 +2,8 @@
   "name": "secret-traitor",
   "private": true,
   "scripts": {
-    "dev": "pnpx serve ."
+    "dev": "pnpx serve .",
+    "storybook": "pnpm --filter secret-traitor-frontend storybook",
+    "build-storybook": "pnpm --filter secret-traitor-frontend build-storybook"
   }
 }

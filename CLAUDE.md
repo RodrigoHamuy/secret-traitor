@@ -1,11 +1,17 @@
 # Secret Traitor — repo guide
 
+## Code style
+
+Don't comment what the code already says. Self-explanatory code needs no comment — skip narration of what a line does, restating a name, or section-header banners. Comment only the non-obvious: a *why*, a gotcha, a workaround, an external constraint. When in doubt, leave it out. Prefer clearer names over explanatory comments.
+
 ## Layout
 
-- **Repo root** — the current game: a vanilla static-HTML app (`index.html`, `app.css`, `app.js`, `engine.js`, `game.js`). No build step; serve the files as-is (`pnpm dev`).
+This is a **pnpm workspace** (monorepo): `pnpm-workspace.yaml` at the root lists the member packages (currently just `frontend`), and there is a single root lockfile (`pnpm-lock.yaml`) — do **not** add a per-package lockfile. Run `pnpm install` once at the root to install every package. The root static game and `worker/` have no `package.json` (the worker deploys via wrangler), so they aren't workspace members.
+
+- **Repo root** — the current game: a vanilla static-HTML app (`index.html`, `app.css`, `app.js`, `engine.js`, `game.js`). No build step; serve the files as-is (`pnpm dev`). The root `package.json` also exposes `pnpm storybook` / `pnpm build-storybook`, which delegate to the `frontend` package via `pnpm --filter`.
 - **`worker/`** — optional Cloudflare Worker that proxies Replicate API calls (see `worker/README.md`).
-- **`frontend/`** — TypeScript + Vite + React package (pnpm). Currently a Storybook-only component library; it is the future home of the React SPA (see roadmap below).
-  - `pnpm storybook` — dev server, `pnpm build-storybook` — static build to `storybook-static/`.
+- **`frontend/`** — TypeScript + Vite + React package (pnpm workspace member). Currently a Storybook-only component library; it is the future home of the React SPA (see roadmap below).
+  - From the root: `pnpm storybook` / `pnpm build-storybook`. From inside `frontend/`: `pnpm storybook` (dev server) / `pnpm build-storybook` (static build to `storybook-static/`).
   - Storybook is intentionally addon-free (`addons: []` in `.storybook/main.ts`); don't add addons unless asked.
   - **Story convention:** one story per component, named `Playground`, with props driven live by a [leva](https://github.com/pmndrs/leva) panel (leva is a runtime dep, not an SB addon). The per-story leva store + panel are wired once, globally, in `.storybook/preview.tsx` (`LevaStory`, keyed on `context.id` so controls reset on navigation). A story reads that store with `useStoreContext()` and passes it to `useControls(schema, { store })`. Don't add per-state stories or Storybook `args`; add a leva control instead. Components with no varying props (only callbacks) keep a single plain `Default` story.
 - **`PLAN.md`** — game design document (rules, milestones, player journey).

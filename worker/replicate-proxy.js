@@ -1,40 +1,21 @@
-/* Secret Traitor — Replicate CORS proxy (Cloudflare Worker)
+/* Secret Traitor — Replicate CORS proxy (Cloudflare Worker). See README.md.
  *
- * Why this exists: the browser can't call api.replicate.com directly because
- * Replicate sends no CORS headers, so a static site (GitHub Pages) gets blocked.
+ * Exists because the browser can't call api.replicate.com directly (no CORS headers).
+ * A stateless, transparent reverse proxy: it forwards any /v1/* path/method/body
+ * verbatim, injecting the caller's token and adding CORS — the client owns the whole
+ * Replicate contract (predictions, polling, models, …).
  *
- * What it is: a thin, STATELESS, transparent reverse proxy to api.replicate.com.
- * Whatever path, method, query and body the client sends, it forwards verbatim —
- * it injects the caller's token as the Authorization header and adds CORS headers
- * on the way back. It knows nothing about predictions, polling, versions or models;
- * the CLIENT owns the entire Replicate contract. That makes this a generic proxy to
- * ANY Replicate endpoint (create a prediction, poll it, list models, etc.).
+ * The token arrives per-request via `X-Replicate-Token` (preferred) or `Authorization:
+ * Bearer …`; with none, it falls back to the optional REPLICATE_API_TOKEN secret.
  *
- *   Client request                          ->  Forwarded to
- *   POST  {proxy}/v1/predictions                POST  https://api.replicate.com/v1/predictions
- *   GET   {proxy}/v1/predictions/{id}           GET   https://api.replicate.com/v1/predictions/{id}
- *   POST  {proxy}/v1/models/{owner}/{name}/predictions  -> same path on api.replicate.com
- *
- * The caller's token arrives per-request in the `X-Replicate-Token` header (preferred)
- * or a standard `Authorization: Bearer …` header, and is used only for that one
- * forwarded call. If the caller sends NO token, the Worker falls back to the optional
- * REPLICATE_API_TOKEN secret binding (set via `wrangler secret put` / the deploy
- * workflow). Replicate itself auto-deletes prediction inputs/outputs within ~1 hour.
- *
- * Security note: because this forwards anything, anyone can drive any Replicate API
- * call through it. With a caller-supplied token that's just "bring your own key." But
- * if REPLICATE_API_TOKEN is configured, an anonymous caller spends YOUR Replicate
- * credits — so if you set the fallback secret, also add an Origin allowlist or rate
- * limiting below before exposing the Worker publicly.
- *
- * Deploy with `wrangler deploy` (see README.md), then set PORTRAIT_PROXY_URL in
- * game.js to the resulting *.workers.dev URL.
+ * Security: it forwards anything. Caller-supplied tokens are "bring your own key", but
+ * a configured REPLICATE_API_TOKEN lets anonymous callers spend YOUR credits — add an
+ * Origin allowlist or rate limiting before exposing it with that fallback set.
  */
 
 const REPLICATE_ORIGIN = 'https://api.replicate.com';
 
-// Open CORS: any origin may call this Worker (it holds no secrets of its own).
-// We echo the requested headers so a browser preflight for X-Replicate-Token passes.
+// Open CORS; echo the requested headers so the X-Replicate-Token preflight passes.
 function corsHeaders(request) {
   const reqHeaders = request.headers.get('Access-Control-Request-Headers');
   return {
@@ -53,8 +34,7 @@ export default {
       return new Response(null, { status: 204, headers: cors });
     }
 
-    // The caller's token: X-Replicate-Token, or a passed-through Authorization header.
-    // If the caller brings none, fall back to the Worker's REPLICATE_API_TOKEN secret.
+    // X-Replicate-Token, a passed-through Authorization header, or the secret fallback.
     const auth = request.headers.get('X-Replicate-Token')
       || request.headers.get('Authorization')
       || (env && env.REPLICATE_API_TOKEN);
@@ -64,16 +44,16 @@ export default {
     // Accept a raw token or an already-formed "Bearer …" value.
     const authorization = /^Bearer\s/i.test(auth) ? auth : `Bearer ${auth}`;
 
-    // Map the incoming path (+query) onto api.replicate.com, untouched. We only guard
-    // that it stays under the Replicate API surface — no open redirect to other hosts.
+    // Forward the path + query onto api.replicate.com; guard /v1/ so it can't be
+    // turned into an open redirect to another host.
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/v1/')) {
       return json({ error: 'Path must begin with /v1/ (the Replicate API path to forward)' }, 400, cors);
     }
     const target = REPLICATE_ORIGIN + url.pathname + url.search;
 
-    // Forward method, body and the Prefer header verbatim; the client decides whether
-    // to send `Prefer: wait`, what body shape to use, and how/whether to poll.
+    // Forward method, body and the Prefer header verbatim; the client owns Prefer: wait,
+    // the body shape, and polling.
     const forwardHeaders = { 'Authorization': authorization };
     const contentType = request.headers.get('Content-Type');
     if (contentType) forwardHeaders['Content-Type'] = contentType;
@@ -94,7 +74,7 @@ export default {
       return json({ error: 'Upstream fetch failed', detail: String(err) }, 502, cors);
     }
 
-    // Return Replicate's response verbatim (status + body), just with CORS added.
+    // Return Replicate's response verbatim, with CORS added.
     const respHeaders = new Headers(cors);
     const upstreamType = upstream.headers.get('Content-Type');
     if (upstreamType) respHeaders.set('Content-Type', upstreamType);

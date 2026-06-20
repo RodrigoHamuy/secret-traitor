@@ -3,13 +3,10 @@ import { Fragment } from 'react';
 import { cx } from '../../lib/cx';
 
 export interface ProgressStepsProps {
-  /** e.g. ['Vote', 'Assassinate'] */
   steps: string[];
-  /** Index of the current step; earlier steps render as done. */
   active: number;
 }
 
-/** 2-step "Vote › Special" progress hint for the Assassin/Guardian turn. */
 export function ProgressSteps({ steps, active }: ProgressStepsProps) {
   return (
     <div className="mx-auto mt-2 mb-0.5 flex items-center justify-center gap-2 font-display text-[11px] font-semibold tracking-[.08em] uppercase">

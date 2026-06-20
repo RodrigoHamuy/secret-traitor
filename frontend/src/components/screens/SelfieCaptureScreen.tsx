@@ -9,11 +9,8 @@ import { Heading } from '../primitives/Heading';
 
 export interface SelfieCaptureScreenProps {
   playerName: string;
-  /** The live camera feed — a `<video>` element supplied by the caller. */
   stage: ReactNode;
-  /** Camera failed to open; shows the fallback note and keeps snap disabled. */
   cameraError?: boolean;
-  /** Stream is ready — enables and highlights the snap button. */
   snapEnabled?: boolean;
   onSnap?: () => void;
   onSkip?: () => void;

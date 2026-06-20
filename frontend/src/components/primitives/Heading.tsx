@@ -8,7 +8,6 @@ export interface HeadingProps {
   className?: string;
 }
 
-/** Section heading (h2) in bright gold capitals. */
 export function Heading({ children, center = false, className }: HeadingProps) {
   return (
     <h2

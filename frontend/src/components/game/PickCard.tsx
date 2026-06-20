@@ -6,13 +6,9 @@ import { Avatar } from './Avatar';
 export interface PickCardProps {
   avatar: AvatarData;
   selected?: boolean;
-  /** Action tint on the chosen card: vote = dark, kill = red, shield = blue,
-   * win = gold (end-game roster). Colours the frame, name, AND washes over the
-   * portrait itself. */
+  /** Tint on the chosen card: vote=dark, kill=red, shield=blue, win=gold. */
   tint?: 'vote' | 'kill' | 'shield' | 'win';
-  /** End-game role tag shown under the name. */
   roleTag?: { label: string; color: string };
-  /** Winner's crown after the name (end-game roster). */
   crown?: boolean;
   onClick?: () => void;
 }
@@ -40,7 +36,6 @@ const TINTS = {
   },
 };
 
-/** Parchment player card for the pick grid and the end-game roster. */
 export function PickCard({ avatar, selected = false, tint, roleTag, crown = false, onClick }: PickCardProps) {
   const t = selected ? (tint ? TINTS[tint] : null) : null;
   return (

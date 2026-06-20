@@ -1,8 +1,5 @@
-/* ===== Secret Traitor — app shell =====
- * Shared UI helpers used by the real game (game.js): the render pipeline, the
- * pinned-footer layout, the title screen, and the keyboard-aware viewport sizing.
- * The game logic lives in game.js (window.Game) and engine.js (window.Engine).
- */
+/* Secret Traitor — app shell: render pipeline, pinned-footer layout, title screen,
+ * keyboard-aware viewport. Game logic lives in game.js (Game) and engine.js (Engine). */
 
 const app = document.getElementById('app');
 const hintEl = document.getElementById('hint');
@@ -15,7 +12,7 @@ function setHint(text) {
   hintEl.hidden = false;
 }
 
-// Render a scene's HTML, then mark the action(s) the user should tap.
+// Render a scene, then highlight the action(s) to tap.
 function render(html, { hint, targetSelector } = {}) {
   app.innerHTML = html;
   layoutScreen();
@@ -27,22 +24,20 @@ function render(html, { hint, targetSelector } = {}) {
   }
 }
 
-// Split the rendered screen into a scrollable content area and a pinned CTA footer,
-// so the call-to-action buttons are always anchored to the bottom (even when the
-// content is short) and stay visible above the on-screen keyboard.
+// Split the screen into a scrollable content area and a CTA footer pinned to the
+// bottom, kept clear of the on-screen keyboard.
 function layoutScreen() {
   if (typeof app.removeChild !== 'function') return; // non-DOM test stub: skip
-  // Drop any spacer sitting after the buttons (it would push the footer up).
+  // Drop a trailing spacer; it would push the footer up.
   while (app.lastElementChild && app.lastElementChild.classList.contains('spacer')) {
     app.removeChild(app.lastElementChild);
   }
-  // Pull the trailing run of .btn elements into the footer (keeps their order).
+  // Move the trailing run of .btn elements into the footer, keeping their order.
   const footer = document.createElement('div');
   footer.className = 'cta-footer';
   while (app.lastElementChild && app.lastElementChild.classList.contains('btn')) {
     footer.insertBefore(app.removeChild(app.lastElementChild), footer.firstChild);
   }
-  // Everything else becomes the scrollable content area.
   const content = document.createElement('div');
   content.className = 'app-content';
   while (app.firstChild) content.appendChild(app.firstChild);
@@ -50,7 +45,6 @@ function layoutScreen() {
   if (footer.childElementCount) app.appendChild(footer);
 }
 
-// ===================== SCENES =====================
 const scenes = {};
 
 scenes.title = () => {
@@ -67,8 +61,8 @@ scenes.title = () => {
   app.querySelector('#create').onclick = () => Game.start();
 };
 
-// Track the on-screen keyboard: shrink the phone to the visible viewport (via
-// --vvh) so the pinned CTA footer is never hidden behind the keyboard.
+// Shrink the phone to the visible viewport (via --vvh) so the keyboard never
+// hides the pinned CTA footer.
 (function trackViewport() {
   const vv = window.visualViewport;
   if (!vv) return;
@@ -78,5 +72,4 @@ scenes.title = () => {
   fit();
 })();
 
-// kick things off
 scenes.title();

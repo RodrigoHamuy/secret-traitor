@@ -18,7 +18,6 @@ export const Playground: StoryObj = {
       },
       { store },
     );
-    // Type into the field to drive `value`/`canContinue`.
     const [value, setValue] = useState('');
     return (
       <NameEntryScreen

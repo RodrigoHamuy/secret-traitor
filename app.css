@@ -1,26 +1,22 @@
-/* ===== Secret Traitor demo — visual style =====
- * Theme: a candlelit chamber of intrigue. Engraved Roman capitals (Cinzel),
- * Garamond body, parchment plaques, aged gold framing, wax-seal red.
- */
+/* Secret Traitor — visual style: a candlelit chamber of intrigue.
+ * Cinzel caps, Garamond body, parchment plaques, aged gold, wax-seal red. */
 :root {
   --bg-top: #241a12;
   --bg-bot: #0c0805;
-  --ink: #1a120a;          /* dark text on parchment */
-  --parch: #e9dcbf;        /* aged paper */
+  --ink: #1a120a;
+  --parch: #e9dcbf;
   --parch-2: #dccaa1;
   --gold: #c9a24a;
   --gold-bright: #e8c873;
-  --line: #6b5026;         /* aged gold-brown border */
-  --text: #ecdfc2;         /* warm parchment text on dark */
+  --line: #6b5026;
+  --text: #ecdfc2;
   --muted: #b6a071;
-  --green: #9fc06f;        /* virtuous / good (readable on dark) */
-  --red: #c8533f;          /* assassin / danger (readable on dark) */
-  /* One font stack for every emoji so glyphs render consistently across the UI. */
+  --green: #9fc06f;        /* virtuous */
+  --red: #c8533f;          /* assassin */
   --emoji-font: 'EB Garamond', Georgia, 'Times New Roman', serif;
 }
 
-/* Any emoji — banner icons, role glyphs, and the leading icon on button CTAs —
-   uses the same stack so they look consistent everywhere. */
+/* One stack for every emoji so glyphs render consistently. */
 .scene-emoji, .glyph, .emoji { font-family: var(--emoji-font); }
 .emoji { font-style: normal; font-weight: normal; }
 
@@ -29,33 +25,30 @@
 html, body {
   margin: 0;
   min-height: 100vh;       /* fallback for browsers without dvh */
-  min-height: 100dvh;      /* tracks the visible area as the address bar shows/hides */
+  min-height: 100dvh;
   font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
   color: var(--text);
   background: #070504;
   padding: 0;
 }
 
-/* Centering lives on body only — putting flex on <html> made <body> shrink-wrap
-   to its content width instead of filling the viewport. */
+/* Centering on body only — flex on <html> shrink-wraps <body> to its content width. */
 body {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* Anchor to the top so when the phone shrinks for the keyboard it doesn't get
-     re-centred down behind it. */
+  /* Top-anchored so the phone isn't re-centred behind the keyboard when it shrinks. */
   justify-content: flex-start;
   gap: 0;
 }
 
-/* Phone frame — dark leather with gold piping */
 .phone {
   position: relative;
   width: 100%;
   max-width: 400px;
   height: 100vh;            /* fallback */
-  height: 100dvh;           /* fill the full viewport height */
+  height: 100dvh;
   height: var(--vvh, 100dvh); /* tracks the visible area when the keyboard opens */
   border-radius: 26px;
   background:
@@ -72,7 +65,6 @@ body {
   flex-direction: column;
 }
 
-/* Candlelight glow that gently flickers */
 .phone::before {
   content: "";
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
@@ -99,11 +91,9 @@ body {
   animation: fade .4s ease both;
 }
 .app-content::-webkit-scrollbar { width: 0; height: 0; display: none; }  /* Chrome/Safari */
-/* Call-to-action buttons, always anchored to the bottom of the screen. */
 .cta-footer { flex: 0 0 auto; }
 @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* Typography */
 .eyebrow {
   font-family: 'Cinzel', Georgia, serif; font-weight: 600;
   letter-spacing: .34em; text-transform: uppercase; font-size: 11px;
@@ -126,7 +116,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .divider { color: var(--gold); text-align: center; font-size: 18px; letter-spacing: .6em;
            margin: 4px 0 16px; opacity: .85; }
 
-/* Buttons — pressed gold plaques */
 .btn {
   appearance: none; cursor: pointer; display: block; width: 100%;
   font-family: 'Cinzel', Georgia, serif; font-weight: 700;
@@ -138,10 +127,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   transition: transform .08s ease, filter .15s ease;
 }
 .btn:active { transform: translateY(1px); filter: brightness(.96); }
-/* CTA with a leading emoji: the label stays centered exactly as if there were no
-   emoji (the two .cta-side columns are equal-width, so the label is the centre).
-   The emoji lives in the left column and is centred within that free space, so its
-   position adapts to the label width. Larger emoji without nudging the text. */
+/* CTA with a leading emoji: equal-width .cta-side columns keep the label centred. */
 .btn.has-emoji { display: flex; align-items: center; }
 .btn.has-emoji .cta-side { flex: 1; display: flex; justify-content: center; }
 .btn.has-emoji .cta-label { flex: 0 0 auto; }
@@ -150,15 +136,14 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .btn.ghost { background: #231a10; color: var(--text); border: 1px solid var(--line); box-shadow: none; }
 .btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
 
-/* The "what to tap" highlight: candleglow pulse */
+/* "what to tap" highlight */
 .target { position: relative; animation: pulse 1.5s ease-in-out infinite; }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(232,200,115,0); }
   50%      { box-shadow: 0 0 0 6px rgba(232,200,115,.25), 0 0 26px rgba(232,200,115,.5); }
 }
 
-/* Hint banner — an aged ribbon with a pointing hand.
- * In normal flow at the bottom of the phone (not overlaid) so it never covers buttons. */
+/* Hint banner: in normal flow at the bottom (not overlaid) so it never covers buttons. */
 .hint {
   flex: none; z-index: 2; margin: 0 14px 14px;
   display: flex; align-items: center; gap: 10px;
@@ -172,7 +157,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .hint-finger { font-size: 22px; line-height: 1; color: #5e3b14; animation: bob 1.2s ease-in-out infinite; }
 @keyframes bob { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
 
-/* Final roster (end-of-game) */
 .seat {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 12px; border-radius: 8px;
@@ -183,7 +167,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .seat .name { font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 14px; letter-spacing: .02em; }
 .seat.you { border-color: var(--gold); }
 .seat.you .name { color: var(--gold-bright); }
-/* Winning team highlighted on the final roster */
 .seat.winner {
   border-color: var(--gold-bright);
   background: linear-gradient(180deg, rgba(232,200,115,.16), rgba(232,200,115,.05));
@@ -193,7 +176,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .seat .crown { font-family: var(--emoji-font); font-size: 14px; margin-left: 6px;
   filter: drop-shadow(0 0 4px rgba(232,200,115,.7)); }
 
-/* Avatars — gold-rimmed medallions */
 .avatar {
   width: 36px; height: 36px; border-radius: 50%; flex: none; overflow: hidden;
   display: grid; place-items: center;
@@ -202,25 +184,23 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 }
 .avatar-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Large avatar on the "Pass the phone to X" gate */
+/* large avatar on the pass-the-phone gate */
 .gate-avatar { display: flex; justify-content: center; margin: auto auto 14px; }
 .gate-avatar .avatar { width: 112px; height: 112px; font-size: 42px;
   box-shadow: 0 0 0 2px #14100a, 0 0 0 4px rgba(201,162,74,.6), 0 8px 24px rgba(0,0,0,.5); }
 
-/* While a selfie is being repainted into a period portrait in the background, a
-   gentle gilt shimmer rings the avatar. It clears the moment the portrait swaps in. */
+/* gilt shimmer while the portrait is being generated in the background */
 .avatar.enhancing { animation: enhance-pulse 1.4s ease-in-out infinite; }
 @keyframes enhance-pulse {
   0%, 100% { box-shadow: 0 0 0 2px #14100a, 0 0 0 3px rgba(201,162,74,.6); }
   50%      { box-shadow: 0 0 0 2px #14100a, 0 0 0 4px rgba(232,196,104,1); }
 }
 
-/* Optional Replicate token field, revealed under the Selfie avatars toggle. */
+/* Replicate token field, revealed under the Selfie avatars toggle. */
 .token-field { margin: 2px 0 4px; }
 .token-input { width: 100%; box-sizing: border-box; -webkit-text-security: disc; }
 .token-note { margin: 6px 2px 0; font-size: 12px; line-height: 1.45; color: var(--muted, #9a8c74); }
 
-/* Selfie capture */
 .selfie-stage {
   width: 240px; height: 240px; max-width: 72vw; max-height: 72vw;
   margin: 16px auto; border-radius: 16px; overflow: hidden; background: #14100a;
@@ -229,7 +209,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .selfie-stage video { width: 100%; height: 100%; object-fit: cover; display: block; transform: scaleX(-1); }
 .selfie-preview { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Player pick grid — parchment cards */
 .pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
 .pick {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -247,8 +226,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 }
 .pick.selected .name { color: #5a3210; }
 
-/* Action-specific tint on the chosen card: vote = dark, kill = red, shield = blue.
-   The tint colours the card's frame, name, AND washes over the portrait itself. */
+/* Action tint on the chosen card: vote = dark, kill = red, shield = blue. */
 .pick.selected .avatar { position: relative; }
 .pick.selected .avatar::after {
   content: ""; position: absolute; inset: 0; border-radius: inherit;
@@ -273,8 +251,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .tint-shield .pick.selected .name { color: #2f4f86; }
 .tint-shield .pick.selected .avatar::after { background: #3f6fb0; }
 
-/* End-game roster: same selected-card treatment, but the tint lives per card
-   (winners gold, killed red, banished dark) since the grid mixes outcomes. */
+/* End-game roster: per-card tint (winners gold, killed red, banished dark). */
 .pick-tint-win.selected {
   border-color: var(--gold-bright);
   box-shadow: inset 0 0 0 2px var(--gold-bright), 0 4px 18px rgba(201,162,74,.55);
@@ -298,7 +275,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   font-size: 40px;
 }
 
-/* Lobby option — themed checkbox */
 .option {
   display: flex; align-items: flex-start; gap: 12px; text-align: left; cursor: pointer;
   padding: 14px; border-radius: 10px; margin-top: 14px;
@@ -320,7 +296,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 }
 .option-sub { color: var(--muted); font-size: 14px; line-height: 1.4; }
 
-/* Setup: player-count stepper + name inputs */
 .stepper { display: flex; align-items: center; justify-content: center; gap: 18px; margin: 6px 0 16px; }
 .step-btn {
   width: 46px; height: 46px; border-radius: 50%; cursor: pointer;
@@ -338,31 +313,27 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 }
 .name-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(232,200,115,.45); }
 
-/* End-game role tag (now shown under each card in the roster grid) */
+/* end-game role tag under each roster card */
 .role-tag { font-family: 'Cinzel', serif; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
 
-/* Vote reveal (suspense mode) */
 .vote-line { display: flex; align-items: center; justify-content: center; gap: 10px;
              font-family: 'Cinzel', serif; font-weight: 700; font-size: 20px; color: var(--ink); }
 .vote-arrow { margin: 14px 0; font-family: 'Cinzel', serif; letter-spacing: .2em;
               font-size: 11px; text-transform: uppercase; color: #8a6a2f; }
 
-/* Per-voter ballot card: the portrait is the headline, name is a caption below it. */
+/* per-voter ballot card: portrait as headline, name as caption below */
 .flip.vote .vote-line { flex-direction: column-reverse; gap: 12px; }
 .flip.vote .vote-line .avatar {
   width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 12px; font-size: 72px;
 }
 .flip.vote .face.front { padding: 14px; }
 
-/* Dawn reveal: the fallen/spared player's portrait is the focal point. */
 .dawn-portrait { display: flex; justify-content: center; margin: 8px 0 16px; }
 .dawn-portrait .avatar {
   width: 100%; height: auto; aspect-ratio: 1 / 1; position: relative;
   border-radius: 14px; font-size: 88px;
 }
-/* Elimination reveal: the portrait starts in full colour and drains to its fate
-   tint (grey for banished, grey + blood-red for slain). Ends matching the static
-   .avatar.banished / .avatar.slain look so later screens stay consistent. */
+/* Elimination reveal: portrait drains to its fate tint, ending on the static look. */
 .dawn-portrait.fade-banished .avatar { animation: drain-grey 1.5s ease-out .3s both; }
 .dawn-portrait.fade-slain .avatar { animation: drain-slain 1.5s ease-out .3s both; }
 .dawn-portrait.fade-slain .avatar::after {
@@ -373,8 +344,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 @keyframes drain-grey  { from { filter: none; } to { filter: grayscale(.5); } }
 @keyframes drain-slain { from { filter: none; } to { filter: grayscale(1) contrast(.95) brightness(.92); } }
 @keyframes fade-in     { from { opacity: 0; } to { opacity: 1; } }
-/* A dead player's avatar anywhere it appears: banished drains to grey,
-   killed drains to grey with a blood-red tint. */
+/* dead player's avatar anywhere: banished = grey, slain = grey + blood-red tint */
 .avatar.banished, .avatar.slain { position: relative; }
 .avatar.banished, .avatar.banished .avatar-img { filter: grayscale(0.5); }
 .avatar.slain, .avatar.slain .avatar-img { filter: grayscale(1) contrast(.95) brightness(.92); }
@@ -385,7 +355,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 
 .vote-choice { color: #9e3b2f; }
 
-/* All-ballots-at-once list */
 .vote-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
 .vote-row { display: flex; align-items: center; gap: 8px; justify-content: center;
             font-family: 'Cinzel', Georgia, serif; font-weight: 600; font-size: 13px; }
@@ -393,7 +362,7 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .vr-name { max-width: 5.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vr-arrow { color: var(--muted); margin: 0 2px; }
 
-/* Debate hourglass (sand drains over --dur; the screen's button skips it) */
+/* debate hourglass — sand drains over --dur */
 .hourglass { position: relative; width: 78px; margin: 18px auto 8px;
   display: flex; flex-direction: column; align-items: center; }
 .hourglass .cap { width: 78px; height: 7px; border-radius: 4px;
@@ -416,7 +385,6 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   color: var(--gold-bright); margin: 2px 0 8px; }
 .timer.up { color: var(--red); animation: pulse 1.2s ease-in-out infinite; }
 
-/* Role reveal card (flip) */
 .reveal { perspective: 1200px; margin: auto 0; }
 .flip { position: relative; width: 100%; aspect-ratio: 3/4; transform-style: preserve-3d;
         transition: transform .7s cubic-bezier(.2,.7,.2,1); }
@@ -434,8 +402,8 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
 .face .glyph { font-size: 58px; margin-bottom: 16px; filter: sepia(.6) saturate(1.3) brightness(.95); }
 .face.back .glyph { filter: none; text-shadow: 0 0 18px rgba(232,200,115,.6); }
 .role-name { font-family: 'Cinzel', Georgia, serif; font-size: 30px; font-weight: 700; letter-spacing: .08em; }
-.role-guardian { color: #3f5f86; }   /* shown on parchment — darker steel blue */
-.role-virtuous { color: #4f7a2f; }    /* (on parchment if used) */
+.role-guardian { color: #3f5f86; }   /* darker on parchment than the dark-bg role colour */
+.role-virtuous { color: #4f7a2f; }
 .role-assassin { color: var(--red); }
 
 .scene-emoji {
@@ -443,14 +411,13 @@ p  { font-size: 18px; line-height: 1.55; margin: 0 0 14px; color: var(--text); }
   filter: sepia(.6) saturate(1.3) brightness(.95) drop-shadow(0 2px 8px rgba(0,0,0,.5));
 }
 
-/* Status pills */
 .pill {
   display: inline-block; padding: 5px 12px; border-radius: 999px;
   font-family: 'Cinzel', Georgia, serif; font-size: 11px; font-weight: 600; letter-spacing: .06em;
   border: 1px solid var(--line); color: var(--gold);
 }
 
-/* 2-step "Vote › Special" progress hint for the Assassin/Guardian turn. */
+/* 2-step "Vote › Special" hint for the Assassin/Guardian turn. */
 .stepper {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   margin: 8px auto 2px; font-family: 'Cinzel', Georgia, serif;
