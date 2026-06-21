@@ -12,7 +12,7 @@ import '@fontsource/eb-garamond/latin-400-italic.css';
 
 import '../src/styles/global.css';
 
-function LevaStory({ children }: { children: ReactNode }) {
+function StoryCanvas({ children }: { children: ReactNode }) {
   const store = useCreateStore();
   return (
     <LevaStoreProvider store={store}>
@@ -30,9 +30,9 @@ const preview: Preview = {
   },
   decorators: [
     (Story, context) => (
-      <LevaStory key={context.id}>
+      <StoryCanvas key={context.id}>
         <Story />
-      </LevaStory>
+      </StoryCanvas>
     ),
   ],
 };
