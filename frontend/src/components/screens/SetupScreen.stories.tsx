@@ -3,9 +3,9 @@ import { useState } from 'react';
 import type { StoryObj } from '@storybook/react-vite';
 
 import { SetupScreen } from './SetupScreen';
-import { withPhone } from '../../storybook/decorators';
+import { screenStoryConfig } from '../../storybook/decorators';
 
-export default { title: 'Screens/SetupScreen', decorators: [withPhone] };
+export default { title: 'Screens/SetupScreen', ...screenStoryConfig };
 
 // Fully interactive form — fields are driven by the screen's own controls, no leva.
 export const Playground: StoryObj = {

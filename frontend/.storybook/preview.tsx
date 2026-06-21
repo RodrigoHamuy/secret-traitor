@@ -26,7 +26,7 @@ function StoryCanvas({ children }: { children: ReactNode }) {
 
 const preview: Preview = {
   parameters: {
-    layout: 'fullscreen',
+    layout: 'centered',
   },
   decorators: [
     (Story, context) => (

@@ -2,10 +2,10 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { VoteRevealAllScreen } from './VoteRevealAllScreen';
-import { withPhone } from '../../storybook/decorators';
+import { screenStoryConfig } from '../../storybook/decorators';
 import { PLAYERS } from '../../storybook/sampleData';
 
-export default { title: 'Screens/VoteRevealAllScreen', decorators: [withPhone] };
+export default { title: 'Screens/VoteRevealAllScreen', ...screenStoryConfig };
 
 export const Playground: StoryObj = {
   render: () => {

@@ -11,6 +11,12 @@ export const withPhone: Decorator = (Story) => (
   </div>
 );
 
+/** Spread into a screen story's default export to get the phone frame + fullscreen canvas. */
+export const screenStoryConfig = {
+  decorators: [withPhone],
+  parameters: { layout: 'fullscreen' },
+} as const;
+
 /** Constrains a loose component story to the app's content width. */
 export const withAppWidth: Decorator = (Story) => (
   <div className="w-[360px] max-w-full">

@@ -6,9 +6,9 @@ import { Spacer } from './Spacer';
 import { BodyText } from '../primitives/BodyText';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
-import { withPhone } from '../../storybook/decorators';
+import { screenStoryConfig } from '../../storybook/decorators';
 
-export default { title: 'Layout/Screen', decorators: [withPhone] };
+export default { title: 'Layout/Screen', ...screenStoryConfig };
 
 export const Playground: StoryObj = {
   render: () => {

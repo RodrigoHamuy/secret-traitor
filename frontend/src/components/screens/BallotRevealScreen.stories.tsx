@@ -4,10 +4,10 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { BallotRevealScreen } from './BallotRevealScreen';
-import { withPhone } from '../../storybook/decorators';
+import { screenStoryConfig } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-export default { title: 'Screens/BallotRevealScreen', decorators: [withPhone] };
+export default { title: 'Screens/BallotRevealScreen', ...screenStoryConfig };
 
 export const Playground: StoryObj = {
   render: () => {

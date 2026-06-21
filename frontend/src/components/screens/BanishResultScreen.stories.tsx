@@ -3,10 +3,10 @@ import { useControls, useStoreContext } from 'leva';
 
 import { BanishResultScreen } from './BanishResultScreen';
 import type { BanishResultScreenProps } from './BanishResultScreen';
-import { withPhone } from '../../storybook/decorators';
+import { screenStoryConfig } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-export default { title: 'Screens/BanishResultScreen', decorators: [withPhone] };
+export default { title: 'Screens/BanishResultScreen', ...screenStoryConfig };
 
 const VARIANT_OPTIONS = ['banished', 'tieBroken', 'noMajority'];
 
