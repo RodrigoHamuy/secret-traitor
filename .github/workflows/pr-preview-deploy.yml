@@ -1,15 +1,16 @@
 name: PR preview deploy
 
-# Deploys a full, self-contained preview of a pull request as THREE fresh Cloudflare
-# Workers — one for the backend (the Replicate proxy in worker/), one for the
-# frontend (the static site served as an assets-only Worker), and one for Storybook
-# (built from frontend/). We deliberately do NOT use Cloudflare's built-in
-# "preview"/versioned deployments (too limiting); instead each PR gets its own
-# dedicated, uniquely-named Workers:
+# Deploys a full, self-contained preview of a pull request as FOUR fresh Cloudflare
+# Workers — one for the backend (the Replicate proxy in worker/), one for the React SPA
+# (built from frontend/), one for the legacy static site, and one for Storybook (built
+# from frontend/). We deliberately do NOT use Cloudflare's built-in "preview"/versioned
+# deployments (too limiting); instead each PR gets its own dedicated, uniquely-named
+# Workers:
 #
-#   backend   -> secret-traitor-be-pr-<N>.<subdomain>.workers.dev
-#   frontend  -> secret-traitor-fe-pr-<N>.<subdomain>.workers.dev
-#   storybook -> secret-traitor-sb-pr-<N>.<subdomain>.workers.dev
+#   backend         -> secret-traitor-be-pr-<N>.<subdomain>.workers.dev
+#   frontend (SPA)  -> secret-traitor-fe-pr-<N>.<subdomain>.workers.dev
+#   frontend legacy -> secret-traitor-fe-legacy-pr-<N>.<subdomain>.workers.dev
+#   storybook       -> secret-traitor-sb-pr-<N>.<subdomain>.workers.dev
 #
 # New commits on the same PR redeploy (overwrite) the same Workers. The matching
 # pr-preview-cleanup.yml workflow deletes all of them when the PR is closed.
@@ -47,14 +48,15 @@ jobs:
         run: |
           echo "backend=secret-traitor-be-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
           echo "frontend=secret-traitor-fe-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+          echo "legacy=secret-traitor-fe-legacy-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
           echo "storybook=secret-traitor-sb-pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
 
-      # Build the Storybook from frontend/ BEFORE the wrangler deploys below. The
+      # Install the workspace BEFORE the wrangler deploys below. The
       # cloudflare/wrangler-action steps run `npm i wrangler` in a directory without a
-      # package.json (worker/, fe-preview/), so npm walks up and injects wrangler into the
-      # root package.json — which would then make `pnpm install --frozen-lockfile` fail
-      # against the root lockfile. Installing the workspace first keeps the root
-      # package.json pristine for the frozen install. Output lands in frontend/storybook-static.
+      # package.json (worker/, spa-preview/, …), so npm walks up and injects wrangler into
+      # the root package.json — which would then make `pnpm install --frozen-lockfile`
+      # fail against the root lockfile. Installing the workspace first keeps the root
+      # package.json pristine for the frozen install.
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -67,10 +69,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build Storybook
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm --filter secret-traitor-frontend build-storybook
+        run: pnpm --filter secret-traitor-frontend build-storybook
 
       # Rewrite the Worker name in worker/wrangler.toml so this PR deploys to its own
       # dedicated Worker (and so the REPLICATE_API_TOKEN secret lands on the right one).
@@ -92,31 +95,57 @@ jobs:
         env:
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
 
-      # Stage the static site into an assets-only Worker, pointing PORTRAIT_PROXY_URL
-      # at THIS PR's backend so the preview is fully self-contained.
-      - name: Stage frontend
+      # Build the SPA pointing its portrait proxy at THIS PR's backend, so the preview is
+      # fully self-contained. Output lands in frontend/dist.
+      - name: Build SPA
+        run: pnpm --filter secret-traitor-frontend build
+        env:
+          VITE_PORTRAIT_PROXY_URL: ${{ steps.backend.outputs.deployment-url }}
+
+      - name: Stage SPA
         run: |
-          mkdir -p fe-preview/public
-          cp index.html app.css app.js engine.js game.js fe-preview/public/
-          sed -i "s#const PORTRAIT_PROXY_URL = '[^']*'#const PORTRAIT_PROXY_URL = '${{ steps.backend.outputs.deployment-url }}'#" fe-preview/public/game.js
-          cat > fe-preview/wrangler.toml <<EOF
+          mkdir -p spa-preview
+          cat > spa-preview/wrangler.toml <<EOF
           name = "${{ steps.names.outputs.frontend }}"
+          compatibility_date = "2024-11-01"
+
+          [assets]
+          directory = "../frontend/dist"
+          EOF
+
+      - name: Deploy SPA Worker
+        id: frontend
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: spa-preview
+
+      # Stage the legacy static site into an assets-only Worker, pointing
+      # PORTRAIT_PROXY_URL at THIS PR's backend so it too is self-contained.
+      - name: Stage legacy static game
+        run: |
+          mkdir -p fe-legacy/public
+          cp index.html app.css app.js engine.js game.js fe-legacy/public/
+          sed -i "s#const PORTRAIT_PROXY_URL = '[^']*'#const PORTRAIT_PROXY_URL = '${{ steps.backend.outputs.deployment-url }}'#" fe-legacy/public/game.js
+          cat > fe-legacy/wrangler.toml <<EOF
+          name = "${{ steps.names.outputs.legacy }}"
           compatibility_date = "2024-11-01"
 
           [assets]
           directory = "./public"
           EOF
 
-      - name: Deploy frontend Worker
-        id: frontend
+      - name: Deploy legacy static Worker
+        id: legacy
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: fe-preview
+          workingDirectory: fe-legacy
 
-      # Serve the Storybook built earlier (frontend/storybook-static) as a third
-      # assets-only Worker.
+      # Serve the Storybook built earlier (frontend/storybook-static) as an assets-only
+      # Worker.
       - name: Stage Storybook
         run: |
           mkdir -p sb-preview
@@ -142,6 +171,7 @@ jobs:
           script: |
             const marker = '<!-- pr-preview-urls -->';
             const fe = '${{ steps.frontend.outputs.deployment-url }}';
+            const legacy = '${{ steps.legacy.outputs.deployment-url }}';
             const be = '${{ steps.backend.outputs.deployment-url }}';
             const sb = '${{ steps.storybook.outputs.deployment-url }}';
             const body = [
@@ -150,7 +180,8 @@ jobs:
               '',
               `| | URL |`,
               `| --- | --- |`,
-              `| 🎮 Frontend | ${fe} |`,
+              `| 🎮 Frontend (SPA) | ${fe} |`,
+              `| 🕹️ Frontend (legacy static) | ${legacy} |`,
               `| 🛰️ Backend (Replicate proxy) | ${be} |`,
               `| 📚 Storybook | ${sb} |`,
               '',

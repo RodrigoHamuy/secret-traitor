@@ -36,7 +36,7 @@ jobs:
           PR: ${{ github.event.number }}
         run: |
           set -euo pipefail
-          for name in "secret-traitor-be-pr-$PR" "secret-traitor-fe-pr-$PR" "secret-traitor-sb-pr-$PR"; do
+          for name in "secret-traitor-be-pr-$PR" "secret-traitor-fe-pr-$PR" "secret-traitor-fe-legacy-pr-$PR" "secret-traitor-sb-pr-$PR"; do
             echo "Deleting Worker: $name"
             # ?force=true also removes it if referenced by other Workers / Durable Objects.
             code=$(curl -sS -o /tmp/resp.json -w '%{http_code}' -X DELETE \

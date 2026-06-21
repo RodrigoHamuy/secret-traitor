@@ -1,0 +1,74 @@
+name: Deploy SPA
+
+# Deploys the React SPA (built from frontend/) to a dedicated Cloudflare Worker on
+# merge to main — the production counterpart to the per-PR SPA preview in
+# pr-preview-deploy.yml, mirroring deploy-storybook.yml. The legacy static game keeps
+# shipping separately via deploy-pages.yml; both run in parallel during the migration.
+# Served as an assets-only Worker at:
+#
+#   secret-traitor-fe.<subdomain>.workers.dev
+#
+# Required GitHub repository secrets (same ones deploy-worker.yml uses):
+#   CLOUDFLARE_API_TOKEN   — a Cloudflare API token with the "Edit Cloudflare Workers" permission.
+#   CLOUDFLARE_ACCOUNT_ID  — your Cloudflare account ID.
+
+on:
+  push:
+    branches:
+      - main
+    # Only redeploy when the SPA source (frontend/) or this workflow changes.
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-spa.yml'
+  workflow_dispatch:
+
+# One deploy at a time; newer pushes supersede in-progress ones.
+concurrency:
+  group: deploy-spa
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      # Install the whole pnpm workspace from the single root lockfile, then build just
+      # the frontend package. Output lands in frontend/dist.
+      - name: Build SPA
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter secret-traitor-frontend build
+
+      # Serve the Vite build as an assets-only Worker (same shape as the PR-preview SPA
+      # deploy, but with the stable production name).
+      - name: Stage SPA
+        run: |
+          mkdir -p spa-prod
+          cat > spa-prod/wrangler.toml <<EOF
+          name = "secret-traitor-fe"
+          compatibility_date = "2024-11-01"
+
+          [assets]
+          directory = "../frontend/dist"
+          EOF
+
+      - name: Deploy SPA Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: spa-prod
