@@ -3,7 +3,6 @@ import { useControls, useStoreContext } from 'leva';
 
 import { BallotCardFront } from './BallotCardFront';
 import { FlipCard } from './FlipCard';
-import { withAppWidth } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
 export default {
@@ -11,7 +10,6 @@ export default {
   decorators: [
     // Card faces live inside a FlipCard, which positions and styles them.
     (Story) => <FlipCard flipped aspect="ballot" back={null} front={<Story />} />,
-    withAppWidth,
   ],
 } satisfies Meta;
 

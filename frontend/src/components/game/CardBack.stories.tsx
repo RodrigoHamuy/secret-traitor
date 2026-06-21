@@ -3,14 +3,12 @@ import { useControls, useStoreContext } from 'leva';
 
 import { CardBack } from './CardBack';
 import { FlipCard } from './FlipCard';
-import { withAppWidth } from '../../storybook/decorators';
 
 export default {
   title: 'Game/CardBack',
   decorators: [
     // Card faces live inside a FlipCard, which positions and styles them.
     (Story) => <FlipCard flipped={false} back={<Story />} front={null} />,
-    withAppWidth,
   ],
 } satisfies Meta;
 

@@ -3,10 +3,9 @@ import { useControls, useStoreContext } from 'leva';
 
 import { VoteList } from './VoteList';
 import { VoteRow } from './VoteRow';
-import { withAppWidth } from '../../storybook/decorators';
 import { PLAYERS } from '../../storybook/sampleData';
 
-export default { title: 'Game/VoteList', decorators: [withAppWidth] };
+export default { title: 'Game/VoteList' };
 
 export const Playground: StoryObj = {
   render: () => {

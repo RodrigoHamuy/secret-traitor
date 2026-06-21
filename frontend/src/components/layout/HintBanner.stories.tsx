@@ -6,9 +6,8 @@ import { Screen } from './Screen';
 import { Spacer } from './Spacer';
 import { Button } from '../primitives/Button';
 import { Heading } from '../primitives/Heading';
-import { screenStoryConfig } from '../../storybook/decorators';
 
-export default { title: 'Layout/HintBanner', ...screenStoryConfig };
+export default { title: 'Layout/HintBanner' };
 
 export const Playground: StoryObj = {
   render: () => {

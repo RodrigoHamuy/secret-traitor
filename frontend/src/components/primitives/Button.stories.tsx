@@ -3,9 +3,8 @@ import { useControls, useStoreContext } from 'leva';
 
 import { Button } from './Button';
 import type { ButtonProps } from './Button';
-import { withAppWidth } from '../../storybook/decorators';
 
-export default { title: 'Primitives/Button', decorators: [withAppWidth] };
+export default { title: 'Primitives/Button' };
 
 const VARIANT_OPTIONS = ['primary', 'secondary', 'ghost'];
 

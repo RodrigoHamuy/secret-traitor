@@ -4,14 +4,12 @@ import { useControls, useStoreContext } from 'leva';
 import { FlipCard } from './FlipCard';
 import { RoleCardFront } from './RoleCardFront';
 import type { RoleCardFrontProps } from './RoleCardFront';
-import { withAppWidth } from '../../storybook/decorators';
 
 export default {
   title: 'Game/RoleCardFront',
   decorators: [
     // Card faces live inside a FlipCard, which positions and styles them.
     (Story) => <FlipCard flipped back={null} front={<Story />} />,
-    withAppWidth,
   ],
 } satisfies Meta;
 

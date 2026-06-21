@@ -6,10 +6,9 @@ import { useControls, useStoreContext } from 'leva';
 import { PickCard } from './PickCard';
 import type { PickCardProps } from './PickCard';
 import { PickGrid } from './PickGrid';
-import { withAppWidth } from '../../storybook/decorators';
 import { PLAYERS } from '../../storybook/sampleData';
 
-export default { title: 'Game/PickGrid', decorators: [withAppWidth] };
+export default { title: 'Game/PickGrid' };
 
 const TINT_OPTIONS = ['vote', 'kill', 'shield'];
 
