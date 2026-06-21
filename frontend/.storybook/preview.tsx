@@ -16,9 +16,11 @@ function LevaStory({ children }: { children: ReactNode }) {
   const store = useCreateStore();
   return (
     <LevaStoreProvider store={store}>
-      <LevaPanel store={store} />
-      <div className="flex min-h-screen w-full flex-col items-center bg-[#070504] p-6 font-body text-parchment">
-        {children}
+      <div className="flex h-screen flex-col overflow-hidden bg-[#070504] font-body text-parchment">
+        <LevaPanel store={store} />
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+          {children}
+        </div>
       </div>
     </LevaStoreProvider>
   );

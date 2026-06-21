@@ -4,7 +4,7 @@ import { PhoneFrame } from '../components/layout/PhoneFrame';
 
 /** Phone frame at handset size — used by screen stories. */
 export const withPhone: Decorator = (Story) => (
-  <div className="h-[720px] w-[400px] max-w-full">
+  <div className="h-full w-[400px] max-w-full">
     <PhoneFrame>
       <Story />
     </PhoneFrame>
