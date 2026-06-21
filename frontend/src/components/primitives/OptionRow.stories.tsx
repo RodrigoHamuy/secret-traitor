@@ -4,9 +4,8 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { OptionRow } from './OptionRow';
-import { withAppWidth } from '../../storybook/decorators';
 
-export default { title: 'Primitives/OptionRow', decorators: [withAppWidth] };
+export default { title: 'Primitives/OptionRow' };
 
 export const Playground: StoryObj = {
   render: () => {

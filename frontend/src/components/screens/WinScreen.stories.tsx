@@ -3,10 +3,9 @@ import { useControls, useStoreContext } from 'leva';
 
 import { WinScreen } from './WinScreen';
 import type { RosterEntry, WinScreenProps } from './WinScreen';
-import { withPhone } from '../../storybook/decorators';
 import { BIANCA, CATERINA, ISABELLA, LORENZO, MATTEO, NICCOLO } from '../../storybook/sampleData';
 
-export default { title: 'Screens/WinScreen', decorators: [withPhone] };
+export default { title: 'Screens/WinScreen' };
 
 const VIRTUOUS = 'var(--color-virtue)';
 const GUARDIAN = 'var(--color-guardian)';

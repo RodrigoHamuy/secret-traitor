@@ -2,10 +2,9 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { SelfieCaptureScreen } from './SelfieCaptureScreen';
-import { withPhone } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-export default { title: 'Screens/SelfieCaptureScreen', decorators: [withPhone] };
+export default { title: 'Screens/SelfieCaptureScreen' };
 
 // Stands in for the live <video> feed the real app slots in.
 const fakeFeed = <img className="block h-full w-full object-cover" src={SAMPLE_PHOTO} alt="" />;

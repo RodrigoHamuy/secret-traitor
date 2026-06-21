@@ -2,9 +2,8 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { DeadlockScreen } from './DeadlockScreen';
-import { withPhone } from '../../storybook/decorators';
 
-export default { title: 'Screens/DeadlockScreen', decorators: [withPhone] };
+export default { title: 'Screens/DeadlockScreen' };
 
 export const Playground: StoryObj = {
   render: () => {

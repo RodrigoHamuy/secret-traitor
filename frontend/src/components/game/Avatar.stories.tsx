@@ -3,10 +3,9 @@ import { useControls, useStoreContext } from 'leva';
 
 import { Avatar } from './Avatar';
 import type { AvatarProps } from './Avatar';
-import { withAppWidth } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-export default { title: 'Game/Avatar', decorators: [withAppWidth] };
+export default { title: 'Game/Avatar' };
 
 const SIZE_OPTIONS = ['xs', 'sm', 'xl', 'fill'];
 const FATE_OPTIONS = ['none', 'banished', 'slain'];

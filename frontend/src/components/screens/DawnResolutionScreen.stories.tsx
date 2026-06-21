@@ -3,10 +3,9 @@ import { useControls, useStoreContext } from 'leva';
 
 import { DawnResolutionScreen } from './DawnResolutionScreen';
 import type { DawnResolutionScreenProps } from './DawnResolutionScreen';
-import { withPhone } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-export default { title: 'Screens/DawnResolutionScreen', decorators: [withPhone] };
+export default { title: 'Screens/DawnResolutionScreen' };
 
 const OUTCOME_OPTIONS = ['killed', 'saved', 'already', 'none'];
 

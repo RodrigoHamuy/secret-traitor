@@ -2,9 +2,8 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { TextInput } from './TextInput';
-import { withAppWidth } from '../../storybook/decorators';
 
-export default { title: 'Primitives/TextInput', decorators: [withAppWidth] };
+export default { title: 'Primitives/TextInput' };
 
 export const Playground: StoryObj = {
   render: () => {

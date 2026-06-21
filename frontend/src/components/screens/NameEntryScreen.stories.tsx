@@ -4,9 +4,8 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { NameEntryScreen } from './NameEntryScreen';
-import { withPhone } from '../../storybook/decorators';
 
-export default { title: 'Screens/NameEntryScreen', decorators: [withPhone] };
+export default { title: 'Screens/NameEntryScreen' };
 
 export const Playground: StoryObj = {
   render: () => {

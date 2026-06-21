@@ -2,10 +2,9 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { SelfieConfirmScreen } from './SelfieConfirmScreen';
-import { withPhone } from '../../storybook/decorators';
 import { SAMPLE_PHOTO } from '../../storybook/sampleData';
 
-export default { title: 'Screens/SelfieConfirmScreen', decorators: [withPhone] };
+export default { title: 'Screens/SelfieConfirmScreen' };
 
 export const Playground: StoryObj = {
   render: () => {

@@ -5,10 +5,9 @@ import { useControls, useStoreContext } from 'leva';
 
 import { ChoosePlayerScreen } from './ChoosePlayerScreen';
 import type { ChoosePlayerScreenProps } from './ChoosePlayerScreen';
-import { withPhone } from '../../storybook/decorators';
 import { PLAYERS } from '../../storybook/sampleData';
 
-export default { title: 'Screens/ChoosePlayerScreen', decorators: [withPhone] };
+export default { title: 'Screens/ChoosePlayerScreen' };
 
 const TINT_OPTIONS = ['vote', 'kill', 'shield'];
 

@@ -7,9 +7,8 @@ import { CardBack } from './CardBack';
 import { FlipCard } from './FlipCard';
 import type { FlipCardProps } from './FlipCard';
 import { RoleCardFront } from './RoleCardFront';
-import { withAppWidth } from '../../storybook/decorators';
 
-export default { title: 'Game/FlipCard', decorators: [withAppWidth] };
+export default { title: 'Game/FlipCard' };
 
 const back = <CardBack glyph="🤫" />;
 const front = (

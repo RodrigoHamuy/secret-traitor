@@ -6,9 +6,8 @@ import { useControls, useStoreContext } from 'leva';
 import { RoleRevealScreen } from './RoleRevealScreen';
 import { RoleCardFront } from '../game/RoleCardFront';
 import type { RoleCardFrontProps } from '../game/RoleCardFront';
-import { withPhone } from '../../storybook/decorators';
 
-export default { title: 'Screens/RoleRevealScreen', decorators: [withPhone] };
+export default { title: 'Screens/RoleRevealScreen' };
 
 const ROLE_OPTIONS = ['virtuous', 'guardian', 'assassin'];
 

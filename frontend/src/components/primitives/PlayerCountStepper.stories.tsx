@@ -4,9 +4,8 @@ import type { StoryObj } from '@storybook/react-vite';
 import { useControls, useStoreContext } from 'leva';
 
 import { PlayerCountStepper } from './PlayerCountStepper';
-import { withAppWidth } from '../../storybook/decorators';
 
-export default { title: 'Primitives/PlayerCountStepper', decorators: [withAppWidth] };
+export default { title: 'Primitives/PlayerCountStepper' };
 
 export const Playground: StoryObj = {
   render: () => {

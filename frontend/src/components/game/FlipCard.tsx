@@ -17,7 +17,7 @@ const FACE =
 
 export function FlipCard({ flipped, onFlip, back, front, aspect = 'role' }: FlipCardProps) {
   return (
-    <div className="my-auto perspective-[1200px]">
+    <div className="my-auto w-full perspective-[1200px]">
       <div
         className={cx(
           'relative w-full transform-3d transition-transform duration-700 ease-[cubic-bezier(.2,.7,.2,1)]',
