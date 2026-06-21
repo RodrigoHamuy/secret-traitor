@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -21,6 +24,7 @@
   },
   "dependencies": {
     "@fontsource/cinzel": "^5.2.8",
-    "@fontsource/eb-garamond": "^5.2.7"
+    "@fontsource/eb-garamond": "^5.2.7",
+    "zustand": "^5.0.2"
   }
 }
