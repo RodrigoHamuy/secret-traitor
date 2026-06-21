@@ -1,14 +1,6 @@
 /* Design system ported from the root static app's app.css. */
 @import 'tailwindcss';
 
-@layer base {
-  html, body {
-    background-color: #070504;
-    margin: 0;
-    padding: 0;
-  }
-}
-
 @theme {
   --color-chamber-from: #241a12;
   --color-chamber-to: #0c0805;

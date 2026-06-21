@@ -17,16 +17,17 @@ function LevaStory({ children }: { children: ReactNode }) {
   return (
     <LevaStoreProvider store={store}>
       <LevaPanel store={store} />
-      <div className="flex h-screen flex-col overflow-hidden bg-[#070504] font-body text-parchment">
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-          {children}
-        </div>
+      <div className="flex h-full flex-col items-center justify-center bg-[#070504] font-body text-parchment">
+        {children}
       </div>
     </LevaStoreProvider>
   );
 }
 
 const preview: Preview = {
+  parameters: {
+    layout: 'fullscreen',
+  },
   decorators: [
     (Story, context) => (
       <LevaStory key={context.id}>
