@@ -1,6 +1,6 @@
 import type { AvatarData } from '../game/Avatar';
 
-import { GateAvatar } from '../game/GateAvatar';
+import { Avatar } from '../game/Avatar';
 import { Screen } from '../layout/Screen';
 import { Spacer } from '../layout/Spacer';
 import { BodyText } from '../primitives/BodyText';
@@ -34,7 +34,13 @@ export function GateScreen({
       }
     >
       <Spacer />
-      {avatar ? <GateAvatar avatar={avatar} /> : <SceneEmoji>📱</SceneEmoji>}
+      {avatar ? (
+        <div className="mx-auto mt-auto mb-3.5 flex justify-center">
+          <Avatar {...avatar} size="xl" />
+        </div>
+      ) : (
+        <SceneEmoji>📱</SceneEmoji>
+      )}
       <Heading center>Pass the phone to {playerName}</Heading>
       <BodyText center>{sub}</BodyText>
       <Spacer />

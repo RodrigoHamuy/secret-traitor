@@ -1,6 +1,6 @@
 import type { AvatarData } from '../game/Avatar';
 
-import { DawnPortrait } from '../game/DawnPortrait';
+import { Avatar } from '../game/Avatar';
 import { Screen } from '../layout/Screen';
 import { Spacer } from '../layout/Spacer';
 import { BodyText } from '../primitives/BodyText';
@@ -30,7 +30,9 @@ export function DawnResolutionScreen({ outcome, victim, ctaLabel, onNext }: Dawn
       <Heading center>Dawn breaks</Heading>
       {outcome === 'killed' && victim && (
         <>
-          <DawnPortrait avatar={victim} fate="slain" />
+          <div className="mt-2 mb-4 flex justify-center">
+            <Avatar {...victim} fate="slain" animateFate size="fill" className="rounded-[14px] text-[88px]" />
+          </div>
           <BodyText center>
             <strong>{victim.name}</strong> was found slain in the night.
           </BodyText>
@@ -38,7 +40,9 @@ export function DawnResolutionScreen({ outcome, victim, ctaLabel, onNext }: Dawn
       )}
       {outcome === 'saved' && victim && (
         <>
-          <DawnPortrait avatar={victim} />
+          <div className="mt-2 mb-4 flex justify-center">
+            <Avatar {...victim} size="fill" className="rounded-[14px] text-[88px]" />
+          </div>
           <BodyText center>
             A blade flashed at <strong>{victim.name}</strong>… but the Guardian's shield held.{' '}
             <strong className="text-virtue">They survive.</strong>

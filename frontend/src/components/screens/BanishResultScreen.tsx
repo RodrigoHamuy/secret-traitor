@@ -1,6 +1,6 @@
 import type { AvatarData } from '../game/Avatar';
 
-import { DawnPortrait } from '../game/DawnPortrait';
+import { Avatar } from '../game/Avatar';
 import { Screen } from '../layout/Screen';
 import { Spacer } from '../layout/Spacer';
 import { BodyText } from '../primitives/BodyText';
@@ -38,7 +38,11 @@ export function BanishResultScreen({ variant, banished, ctaLabel, onNext }: Bani
           <Heading center>
             {variant === 'tieBroken' ? 'Still deadlocked — fate decides' : 'The majority has decided'}
           </Heading>
-          {banished && <DawnPortrait avatar={banished} fate="banished" />}
+          {banished && (
+            <div className="mt-2 mb-4 flex justify-center">
+              <Avatar {...banished} fate="banished" animateFate size="fill" className="rounded-[14px] text-[88px]" />
+            </div>
+          )}
           <BodyText center>
             {variant === 'tieBroken' ? (
               <>
