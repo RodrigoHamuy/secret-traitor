@@ -17,7 +17,7 @@ function StoryCanvas({ children }: { children: ReactNode }) {
   return (
     <LevaStoreProvider store={store}>
       <LevaPanel store={store} />
-      <div className="flex h-full flex-col items-center justify-center bg-[#070504] font-body text-parchment">
+      <div className="flex h-dvh flex-col items-center justify-center bg-[#070504] font-body text-parchment">
         {children}
       </div>
     </LevaStoreProvider>
