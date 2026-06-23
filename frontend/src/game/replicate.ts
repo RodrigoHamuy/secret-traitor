@@ -55,8 +55,13 @@ interface Prediction {
   urls?: { get?: string };
 }
 
+// No token → omit the header so the proxy falls back to its own REPLICATE_API_TOKEN.
+function tokenHeader(token: string): Record<string, string> {
+  return token ? { 'X-Replicate-Token': token } : {};
+}
+
 function runReplicate(token: string, createBody: unknown): Promise<Prediction> {
-  const headers = { 'Content-Type': 'application/json', 'X-Replicate-Token': token, Prefer: 'wait' };
+  const headers = { 'Content-Type': 'application/json', ...tokenHeader(token), Prefer: 'wait' };
   return fetch(PORTRAIT_PROXY_URL + '/v1/predictions', {
     method: 'POST', headers, body: JSON.stringify(createBody),
   })
@@ -71,7 +76,7 @@ function pollPrediction(pred: Prediction, token: string, tries = 30): Promise<Pr
   if (!getUrl) return Promise.resolve(pred);
   const proxied = PORTRAIT_PROXY_URL + new URL(getUrl).pathname;
   return new Promise((resolve) => setTimeout(resolve, 3000))
-    .then(() => fetch(proxied, { headers: { 'X-Replicate-Token': token } }))
+    .then(() => fetch(proxied, { headers: tokenHeader(token) }))
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
     .then((next: Prediction) => pollPrediction(next, token, tries - 1));
 }
@@ -98,7 +103,7 @@ export function enhancePortrait(
   selfie: string,
   index: number,
 ): Promise<string | null> {
-  if (!token || !selfie) return Promise.resolve(null);
+  if (!selfie) return Promise.resolve(null);
   return runReplicate(token, {
     version: PORTRAIT_VERSION,
     input: {

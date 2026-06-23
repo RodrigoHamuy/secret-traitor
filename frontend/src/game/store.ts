@@ -214,12 +214,11 @@ export const useGame = create<GameState>((set, get) => {
       if (!photo) return;
       const token = s.settings.replicateToken;
       set({
-        players: s.players.map((p, i) => (i === idx ? { ...p, photo, enhancing: !!token } : p)),
+        players: s.players.map((p, i) => (i === idx ? { ...p, photo, enhancing: true } : p)),
         pendingPhoto: null,
         flipped: false,
         phase: 'revealRole',
       });
-      if (!token) return;
       // Fire-and-forget; ignore the result if the player retook the photo meanwhile.
       enhancePortrait(token, photo, idx).then((dataUrl) =>
         set((st) => ({
